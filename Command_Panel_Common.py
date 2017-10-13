@@ -17,10 +17,26 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
-"""Command panel for FreeCAD."""
+"""Command panel for FreeCAD - Common."""
 
-p = FreeCAD.ParamGet("User parameter:BaseApp/CommandPanel")
+import FreeCADGui as Gui
+from PySide import QtGui
 
 
-if p.GetBool("Enabled", 1):
-    import Command_Panel_Gui
+mw = Gui.getMainWindow()
+
+
+def actionList():
+    """Create a dictionary of unique actions."""
+    actions = {}
+    duplicates = []
+    for i in mw.findChildren(QtGui.QAction):
+        if i.objectName() and i.text():
+            if i.objectName() in actions:
+                if i.objectName() not in duplicates:
+                    duplicates.append(i.objectName())
+            else:
+                actions[i.objectName()] = i
+    for d in duplicates:
+        del actions[d]
+    return actions
