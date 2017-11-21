@@ -19,6 +19,7 @@
 
 """Command panel for FreeCAD - Common."""
 
+import uuid
 import FreeCADGui as Gui
 from PySide import QtGui
 
@@ -40,3 +41,85 @@ def actionList():
     for d in duplicates:
         del actions[d]
     return actions
+
+
+def wbIcon(i):
+    """Create workbench icon."""
+    if str(i.find("XPM")) != "-1":
+        icon = []
+        for a in ((((i
+                     .split('{', 1)[1])
+                    .rsplit('}', 1)[0])
+                   .strip())
+                  .split("\n")):
+            icon.append((a
+                         .split('"', 1)[1])
+                        .rsplit('"', 1)[0])
+        icon = QtGui.QIcon(QtGui.QPixmap(icon))
+    else:
+        icon = QtGui.QIcon(QtGui.QPixmap(i))
+    if icon.isNull():
+        icon = QtGui.QIcon(":/icons/freecad")
+    return icon
+
+
+def defaultGroup(base):
+    """Create default group if no group exist."""
+    g = None
+    index = base.GetString("index")
+    if not index:
+        base.SetString("index", "1")
+        g = base.GetGroup("1")
+        g.SetString("uuid", str(uuid.uuid4()))
+        g.SetString("name", "Default")
+        base.SetBool("default", 1)
+        base.SetString("default", g.GetString("uuid"))
+    return g
+
+
+def newGroup(base):
+    """Create new group."""
+    index = base.GetString("index")
+    if index:
+        index = index.split(",")
+    else:
+        index = []
+    x = 1
+    while str(x) in index and x < 1000:
+        x += 1
+    index.append(str(x))
+    base.SetString("index", ",".join(index))
+    g = base.GetGroup(str(x))
+    g.SetString("uuid", str(uuid.uuid4()))
+    return g
+
+
+def findGroup(base, uid):
+    """Find group with given uuid."""
+    g = None
+    index = base.GetString("index")
+    if index:
+        index = index.split(",")
+    else:
+        index = []
+    for i in index:
+        if base.GetGroup(i).GetString("uuid") == uid:
+            g = base.GetGroup(i)
+    return g
+
+
+def deleteGroup(base, uid):
+    """Delete group with given uuid."""
+    temp = []
+    index = base.GetString("index")
+    if index:
+        index = index.split(",")
+    else:
+        index = []
+    for i in index:
+        if base.GetGroup(i).GetString("uuid") == uid:
+            base.RemGroup(i)
+        else:
+            temp.append(i)
+    base.SetString("index", ",".join(temp))
+    defaultGroup(base)

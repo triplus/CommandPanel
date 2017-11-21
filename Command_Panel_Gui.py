@@ -67,6 +67,7 @@ def accessoriesMenu():
 
 def onPreferences():
     """Open the preferences dialog."""
+    cpp.createWidgets()
     dialog = cpp.dialog()
     dialog.show()
 
