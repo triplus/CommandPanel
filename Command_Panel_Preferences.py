@@ -42,6 +42,8 @@ def createWidgets():
     cBoxMenu = QtGui.QComboBox()
     cBoxMenu.setSizePolicy(QtGui.QSizePolicy.Expanding,
                            QtGui.QSizePolicy.Preferred)
+    global enabled
+    enabled = QtGui.QListWidget()
 
 
 def baseGroup():
@@ -124,6 +126,27 @@ def general(dia, btnClose):
     btnRemoveWbMenu.setToolTip("Remove currently selected workbench menu")
     btnRemoveWbMenu.setIcon(QtGui.QIcon(path + "CommandPanel_Remove.svg"))
 
+    # Button add command
+    btnAddCommand = QtGui.QPushButton()
+    btnAddCommand.setToolTip("Add selected command")
+    btnAddCommand.setIcon(QtGui.QIcon(path + "CommandPanel_AddCommand.svg"))
+
+    # Button remove command
+    btnRemoveCommand = QtGui.QPushButton()
+    btnRemoveCommand.setToolTip("Remove selected command")
+    btnRemoveCommand.setIcon(QtGui.QIcon(path +
+                                         "CommandPanel_RemoveCommand.svg"))
+
+    # Button move up
+    btnMoveUp = QtGui.QPushButton()
+    btnMoveUp.setToolTip("Move selected command up")
+    btnMoveUp.setIcon(QtGui.QIcon(path + "CommandPanel_Up.svg"))
+
+    # Button move down
+    btnMoveDown = QtGui.QPushButton()
+    btnMoveDown.setToolTip("Move selected command down")
+    btnMoveDown.setIcon(QtGui.QIcon(path + "CommandPanel_Down.svg"))
+
     # Layout
     loPanels = QtGui.QHBoxLayout()
     loLeft = QtGui.QVBoxLayout()
@@ -144,13 +167,17 @@ def general(dia, btnClose):
     loCBoxMenu.addWidget(btnAddWbMenu)
     loCBoxMenu.addWidget(btnRemoveWbMenu)
 
-    loTemp = QtGui.QHBoxLayout()
-    loTemp.addStretch()
+    loControls = QtGui.QHBoxLayout()
+    loControls.addStretch()
+    loControls.addWidget(btnAddCommand)
+    loControls.addWidget(btnRemoveCommand)
+    loControls.addWidget(btnMoveUp)
+    loControls.addWidget(btnMoveDown)
 
     loRight.insertLayout(0, loCBoxWb)
     loRight.insertLayout(1, loCBoxMenu)
-    loRight.insertLayout(2, loTemp)
-    loRight.addStretch()
+    loRight.addWidget(enabled)
+    loRight.insertLayout(3, loControls)
 
     loBottom = QtGui.QHBoxLayout()
     loBottom.addStretch()
@@ -179,11 +206,15 @@ def general(dia, btnClose):
         for i in actions:
             item = QtGui.QListWidgetItem(commands)
             item.setText(actions[i].text().replace("&", ""))
-            item.setIcon(actions[i].icon())
+            item.setToolTip(actions[i].toolTip())
+            icon = actions[i].icon()
+            if icon.isNull():
+                item.setIcon(QtGui.QIcon(":/icons/freecad"))
+            else:
+                item.setIcon(icon)
             item.setData(QtCore.Qt.UserRole, actions[i].objectName())
+        commands.setCurrentRow(0)
         commands.blockSignals(False)
-
-    populateCommands()
 
     def populateCBoxWb():
         """Workbench selector combo box."""
@@ -209,13 +240,17 @@ def general(dia, btnClose):
         """Activate workbench on selection."""
         base = baseGroup()
         wb = Gui.listWorkbenches()
-        current = cBoxWb.itemData(cBoxWb.currentIndex(), QtCore.Qt.UserRole)
+        current = cBoxWb.itemData(cBoxWb.currentIndex(),
+                                  QtCore.Qt.UserRole)
         for i in wb:
             if wb[i].__class__.__name__ == current:
                 Gui.activateWorkbench(i)
         cpc.defaultGroup(base)
         populateCommands()
         populateCBoxMenu()
+        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        populateEnabled(cpc.findGroup(base, uid))
+        btnClose.setFocus()
 
     cBoxWb.currentIndexChanged.connect(onCBoxWb)
 
@@ -254,12 +289,16 @@ def general(dia, btnClose):
 
     def onCBoxMenu():
         """Load workbench menu data."""
+        base = baseGroup()
+        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
         ckDefault.blockSignals(True)
         if isDefaultMenu():
             ckDefault.setChecked(True)
         else:
             ckDefault.setChecked(False)
         ckDefault.blockSignals(False)
+        populateEnabled(cpc.findGroup(base, uid))
+        btnClose.setFocus()
 
     cBoxMenu.currentIndexChanged.connect(onCBoxMenu)
 
@@ -269,6 +308,8 @@ def general(dia, btnClose):
         base.Clear()
         cpc.defaultGroup(base)
         populateCBoxMenu()
+        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        populateEnabled(cpc.findGroup(base, uid))
         btnClose.setFocus()
 
     btnResetWb.clicked.connect(onBtnResetWb)
@@ -291,6 +332,7 @@ def general(dia, btnClose):
             populateCBoxMenu()
             cBoxMenu.setCurrentIndex(cBoxMenu.findData(g.GetString("uuid")))
             d.deleteLater()
+            populateEnabled(g)
         else:
             d.deleteLater()
         btnClose.setFocus()
@@ -302,7 +344,10 @@ def general(dia, btnClose):
         base = baseGroup()
         uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
         cpc.deleteGroup(base, uid)
+        cpc.defaultGroup(base)
         populateCBoxMenu()
+        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        populateEnabled(cpc.findGroup(base, uid))
         btnClose.setFocus()
 
     btnRemoveWbMenu.clicked.connect(onBtnRemoveWbMenu)
@@ -329,6 +374,104 @@ def general(dia, btnClose):
                 d = True
         return d
 
+    def saveEnabled():
+        """Save enabled on change."""
+        items = []
+        for index in range(enabled.count()):
+            items.append(enabled.item(index).data(QtCore.Qt.UserRole))
+        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        g = cpc.findGroup(baseGroup(), uid)
+        if g:
+            g.SetString("commands", ",".join(items))
+
+    def populateEnabled(group):
+        """Populate enabled commands panel."""
+        items = group.GetString("commands")
+        if items:
+            items = items.split(",")
+        else:
+            items = []
+        actions = cpc.actionList()
+        enabled.blockSignals(True)
+        enabled.clear()
+        for i in items:
+            item = QtGui.QListWidgetItem(enabled)
+            if i in actions:
+                item.setText(actions[i].text().replace("&", ""))
+                item.setToolTip(actions[i].toolTip())
+                icon = actions[i].icon()
+                if icon.isNull():
+                    item.setIcon(QtGui.QIcon(":/icons/freecad"))
+                else:
+                    item.setIcon(icon)
+                item.setData(QtCore.Qt.UserRole, i)
+            else:
+                item.setText(i)
+                item.setToolTip("The command is not currently available")
+                icon = QtGui.QIcon()
+                icon.addPixmap(QtGui.QPixmap(":/icons/freecad"))
+                item.setIcon(QtGui.QIcon(icon.pixmap(256,
+                                                     QtGui.QIcon.Disabled)))
+                item.setData(QtCore.Qt.UserRole, i)
+        enabled.setCurrentRow(0)
+        enabled.blockSignals(False)
+
+    def onBtnAddCommand():
+        """Add the selected command."""
+        row = enabled.currentRow()
+        data = commands.currentItem().data(QtCore.Qt.UserRole)
+        item = QtGui.QListWidgetItem()
+        enabled.insertItem(row + 1, item)
+        enabled.setCurrentRow(row + 1)
+        item.setText(commands.currentItem().text().replace("&", ""))
+        item.setToolTip(commands.currentItem().toolTip())
+        item.setIcon(commands.currentItem().icon())
+        item.setData(QtCore.Qt.UserRole, data)
+        saveEnabled()
+        btnClose.setFocus()
+
+    btnAddCommand.clicked.connect(onBtnAddCommand)
+    commands.itemDoubleClicked.connect(onBtnAddCommand)
+
+    def onBtnRemoveCommand():
+        """Remove the selected command."""
+        row = enabled.currentRow()
+        item = enabled.takeItem(row)
+        if item:
+            del item
+            if row == 0:
+                enabled.setCurrentRow(row)
+            else:
+                enabled.setCurrentRow(row - 1)
+            saveEnabled()
+        btnClose.setFocus()
+
+    btnRemoveCommand.clicked.connect(onBtnRemoveCommand)
+
+    def onBtnMoveUp():
+        """Move selected command up."""
+        row = enabled.currentRow()
+        if row != 0:
+            item = enabled.takeItem(row)
+            enabled.insertItem(row - 1, item)
+            enabled.setCurrentRow(row - 1)
+            saveEnabled()
+        btnClose.setFocus()
+
+    btnMoveUp.clicked.connect(onBtnMoveUp)
+
+    def onBtnMoveDown():
+        """Move selected command down."""
+        row = enabled.currentRow()
+        if row != enabled.count() - 1 and row != -1:
+            item = enabled.takeItem(row)
+            enabled.insertItem(row + 1, item)
+            enabled.setCurrentRow(row + 1)
+            saveEnabled()
+        btnClose.setFocus()
+
+    btnMoveDown.clicked.connect(onBtnMoveDown)
+
     # Available workbenches
     populateCBoxWb()
     # Default menu
@@ -337,5 +480,8 @@ def general(dia, btnClose):
     populateCBoxMenu()
     # Available commands
     populateCommands()
+    # Enabled commands
+    populateEnabled(cpc.findGroup(baseGroup(),
+                                  cBoxMenu.itemData(cBoxMenu.currentIndex())))
 
     return w
