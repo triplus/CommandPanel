@@ -20,16 +20,33 @@
 """Command panel for FreeCAD - Gui."""
 
 import FreeCADGui as Gui
+import FreeCAD as App
 from PySide import QtGui
 from PySide import QtCore
+import Command_Panel_Commands as cpcmd
 import Command_Panel_Preferences as cpp
+import Command_Panel_Flow_Layout as flow
 
 
 mw = Gui.getMainWindow()
+p = App.ParamGet("User parameter:BaseApp/CommandPanel")
+
+layout = flow.FlowLayout()
+
+widget = QtGui.QWidget()
+widget.setLayout(layout)
+
+scroll = QtGui.QScrollArea()
+scroll.setWidgetResizable(True)
+scroll.setVerticalScrollBarPolicy((QtCore.Qt.ScrollBarAlwaysOff))
+scroll.setHorizontalScrollBarPolicy((QtCore.Qt.ScrollBarAlwaysOff))
+scroll.setWidget(widget)
+scroll.setMinimumHeight(16)
+
 dock = QtGui.QDockWidget()
 dock.setWindowTitle("Commands")
 dock.setObjectName("CommandPanel")
-widget = QtGui.QWidget()
+dock.setWidget(scroll)
 mw.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
 
 
@@ -72,6 +89,19 @@ def onPreferences():
     dialog.show()
 
 
+def onWorkbench():
+    """Populate command panel on workbench activation."""
+    workbench = Gui.activeWorkbench().__class__.__name__
+    item = layout.takeAt(0)
+    while item:
+        item.widget().hide()
+        del item
+        item = layout.takeAt(0)
+    buttons = cpcmd.workbenchButtons(workbench)
+    for btn in buttons:
+        layout.addWidget(btn)
+
+
 def onStart():
     """Start command panel."""
     start = False
@@ -83,7 +113,9 @@ def onStart():
     if start:
         t.stop()
         t.deleteLater()
+        onWorkbench()
         accessoriesMenu()
+        mw.workbenchActivated.connect(onWorkbench)
 
 
 t = QtCore.QTimer()

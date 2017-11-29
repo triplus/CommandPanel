@@ -24,6 +24,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
 from PySide import QtCore
+import Command_Panel_Gui as cpg
 import Command_Panel_Common as cpc
 
 
@@ -361,6 +362,7 @@ def general(dia, btnClose):
             base.SetString("default", uid)
         else:
             base.RemString("default")
+        cpg.onWorkbench()
 
     ckDefault.stateChanged.connect(onCKDefault)
 
@@ -383,6 +385,7 @@ def general(dia, btnClose):
         g = cpc.findGroup(baseGroup(), uid)
         if g:
             g.SetString("commands", ",".join(items))
+        cpg.onWorkbench()
 
     def populateEnabled(group):
         """Populate enabled commands panel."""
@@ -407,7 +410,7 @@ def general(dia, btnClose):
                 item.setData(QtCore.Qt.UserRole, i)
             else:
                 item.setText(i)
-                item.setToolTip("The command is not currently available")
+                item.setToolTip("Command " + i + " is not currently available")
                 icon = QtGui.QIcon()
                 icon.addPixmap(QtGui.QPixmap(":/icons/freecad"))
                 item.setIcon(QtGui.QIcon(icon.pixmap(256,
@@ -415,6 +418,7 @@ def general(dia, btnClose):
                 item.setData(QtCore.Qt.UserRole, i)
         enabled.setCurrentRow(0)
         enabled.blockSignals(False)
+        cpg.onWorkbench()
 
     def onBtnAddCommand():
         """Add the selected command."""
@@ -439,10 +443,10 @@ def general(dia, btnClose):
         item = enabled.takeItem(row)
         if item:
             del item
-            if row == 0:
-                enabled.setCurrentRow(row)
-            else:
+            if row == enabled.count():
                 enabled.setCurrentRow(row - 1)
+            else:
+                enabled.setCurrentRow(row)
             saveEnabled()
         btnClose.setFocus()
 

@@ -72,6 +72,11 @@ def defaultGroup(base):
         g = base.GetGroup("1")
         g.SetString("uuid", str(uuid.uuid4()))
         g.SetString("name", "Default")
+        cmd = ["Std_ViewAxo",
+               "Std_ViewFront",
+               "Std_ViewTop",
+               "Std_ViewRight"]
+        g.SetString("commands", ",".join(cmd))
         base.SetBool("default", 1)
         base.SetString("default", g.GetString("uuid"))
     return g
@@ -102,9 +107,10 @@ def findGroup(base, uid):
         index = index.split(",")
     else:
         index = []
-    for i in index:
-        if base.GetGroup(i).GetString("uuid") == uid:
-            g = base.GetGroup(i)
+    if uid:
+        for i in index:
+            if base.GetGroup(i).GetString("uuid") == uid:
+                g = base.GetGroup(i)
     return g
 
 
