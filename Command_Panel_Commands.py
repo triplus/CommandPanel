@@ -46,18 +46,76 @@ def workbenchButtons(workbench):
             commands = commands.split(",")
         else:
             commands = []
-        for c in commands:
+        for cmd in commands:
             btn = QtGui.QToolButton()
             btn.setAutoRaise(True)
             btn.installEventFilter((cpef.InstallEvent(btn)))
-            if c in actions:
-                btn.setCheckable(actions[c].isCheckable())
-                btn.setDefaultAction(actions[c])
+            if cmd == "CP_Separator":
+                btn.setEnabled(False)
+                btn.setObjectName("CP_Separator")
+            elif cmd == "CP_Spacer":
+                btn.setEnabled(False)
+                btn.setObjectName("CP_Spacer")
+            elif cmd == "CP_Menu":
+                menu = QtGui.QMenu()
+                btn.setEnabled(False)
+                btn.setMenu(menu)
+                btn.setIcon(QtGui.QIcon(":/icons/freecad"))
+                btn.setPopupMode(QtGui.QToolButton
+                                 .ToolButtonPopupMode.MenuButtonPopup)
+                btn.setToolTip("Empty menu")
+            elif cmd.startswith("CP_Menu_"):
+                menu = menuButton(base, cmd, btn, actions)
+                btn.setMenu(menu)
+                btn.triggered.connect(btn.setDefaultAction)
+                btn.setPopupMode(QtGui.QToolButton
+                                 .ToolButtonPopupMode.MenuButtonPopup)
+            elif cmd in actions:
+                btn.setDefaultAction(actions[cmd])
+                if btn.icon().isNull():
+                    btn.setIcon(QtGui.QIcon(":/icons/freecad"))
             else:
                 btn.setEnabled(False)
-                btn.setToolTip("Command " + c + " is not currently available")
-            if btn.icon().isNull():
+                btn.setToolTip("Command " +
+                               cmd +
+                               " is not currently available")
                 btn.setIcon(QtGui.QIcon(":/icons/freecad"))
             buttons.append(btn)
 
     return buttons
+
+
+def menuButton(base, cmd, btn, actions):
+    """Create menu for menu button from command names."""
+    menu = QtGui.QMenu(mw)
+    try:
+        uid = cmd.split("CP_Menu_", 1)[1]
+    except IndexError:
+        uid = None
+    g = cpc.findGroup(base, uid)
+    if g:
+        commands = g.GetString("commands")
+        if commands:
+            commands = commands.split(",")
+        else:
+            commands = []
+        for cmd in commands:
+            if cmd.startswith("CP_Menu") or cmd.startswith("CP_Spacer"):
+                pass
+            elif cmd == "CP_Separator":
+                menu.addSeparator()
+            elif cmd in actions:
+                menu.addAction(actions[cmd])
+            else:
+                a = QtGui.QAction(menu)
+                a.setEnabled(False)
+                a.setText(cmd)
+                a.setIcon(QtGui.QIcon(":/icons/freecad"))
+                a.setToolTip("Command " + cmd + " is not currently available")
+                menu.addAction(a)
+            try:
+                btn.setDefaultAction(menu.actions()[0])
+            except IndexError:
+                pass
+
+    return menu
