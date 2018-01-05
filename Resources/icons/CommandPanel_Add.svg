@@ -1,79 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   version="1.1"
-   width="64"
-   height="64"
-   id="svg6431">
-  <metadata
-     id="metadata14">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <defs
-     id="defs6433">
-    <symbol
-       id="a" />
-    <linearGradient
-       x1="32"
-       x2="32"
-       y1="32"
-       gradientUnits="userSpaceOnUse"
-       y2="19"
-       id="linearGradient5250">
-      <stop
-         offset="0"
-         stop-color="#fff"
-         id="stop5246" />
-      <stop
-         offset="1"
-         stop-opacity="0"
-         stop-color="#fff"
-         id="stop5248" />
-    </linearGradient>
-  </defs>
-  <path
-     fill="#73d216"
-     stroke-width="2"
-     stroke="#2e3436"
-     fill-rule="evenodd"
-     d="m37 58h-10v-21h-21v-10h21v-21h10v21h21v10h-21z"
-     stroke-linejoin="round"
-     id="path4157" />
-  <g
-     transform="matrix(.70711 -.70711 .70711 .70711 -14.202 33.072)"
-     id="g4159">
-    <use
-       x="0"
-       y="0"
-       width="100%"
-       height="100%"
-       xlink:href="#a"
-       id="use4161" />
-  </g>
-  <path
-     fill="none"
-     stroke-width="2"
-     stroke="#fff"
-     d="m8 35v-6h21v-21h6v21h21v6h-21v21h-6v-21z"
-     opacity=".4"
-     id="path5236" />
-  <path
-     fill="url(#linearGradient5250)"
-     fill-rule="evenodd"
-     d="m57 32v-4h-21v-21h-8v21h-21v4z"
-     opacity=".3"
-     id="path5242" />
+<svg id="svg6431" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" height="64" width="64" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/">
+ <defs id="defs6433">
+  <linearGradient id="linearGradient4162" y2="19" gradientUnits="userSpaceOnUse" x2="32" y1="32" x1="32">
+   <stop id="stop5246" stop-color="#fff" offset="0"/>
+   <stop id="stop5248" stop-color="#fff" stop-opacity="0" offset="1"/>
+  </linearGradient>
+ </defs>
+ <path id="path4151" stroke-linejoin="round" d="m37 58h-10v-21h-21v-10h21v-21h10v21h21v10h-21z" fill-rule="evenodd" stroke="#2e3436" stroke-width="2" fill="#73d216"/>
+ <path id="path4158" opacity=".4" d="m8 35v-6h21v-21h6v21h21v6h-21v21h-6v-21z" stroke="#fff" stroke-width="2" fill="none"/>
+ <path id="path4160" opacity=".3" d="m57 32v-4h-21v-21h-8v21h-21v4z" fill-rule="evenodd" fill="url(#linearGradient4162)"/>
 </svg>

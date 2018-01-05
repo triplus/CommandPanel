@@ -1,63 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   version="1.1"
-   width="64"
-   height="64"
-   id="svg6431">
-  <metadata
-     id="metadata4705">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <defs
-     id="defs6433">
-    <linearGradient
-       id="linearGradient4692">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop4694" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:0;"
-         offset="1"
-         id="stop4696" />
-    </linearGradient>
-    <linearGradient
-       xlink:href="#linearGradient4692"
-       id="linearGradient4698"
-       x1="31.993944"
-       y1="31.114592"
-       x2="31.995186"
-       y2="6.499052"
-       gradientUnits="userSpaceOnUse" />
-  </defs>
-  <g
-     id="g4695"
-     transform="matrix(-1,0,0,-1,64,63.743144)">
-    <path
-       style="fill:#729fcf;stroke:#000000;stroke-width:2"
-       id="rect4272"
-       d="M 54,30 32,5 10,30 l 16,0 0,29 12,0 0,-29 z" />
-    <path
-       id="path4210"
-       d="M 32,8 49.6,28 36,28 36,57 28,57 28,28 14.4,28 Z"
-       style="opacity:0.4;fill:none;stroke:#ffffff;stroke-width:2" />
-    <path
-       id="path4690"
-       d="m 31.995185,6.4990522 -19.808961,21.9999998 14.777711,0.46875 c 0,2.792219 10.03125,2.910273 10.03125,0.0625 l 14.80648,-0.02894 z"
-       style="opacity:0.4;fill:url(#linearGradient4698);fill-opacity:1;stroke:none;stroke-width:2" />
-  </g>
+<svg id="svg6431" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" height="64" width="64" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/">
+ <defs id="defs6433">
+  <linearGradient id="linearGradient4698" y2="6.4991" gradientUnits="userSpaceOnUse" x2="31.995" y1="31.115" x1="31.994">
+   <stop id="stop4694" stop-color="#fff" offset="0"/>
+   <stop id="stop4696" stop-color="#fff" stop-opacity="0" offset="1"/>
+  </linearGradient>
+ </defs>
+ <g id="g4695" transform="matrix(-1 0 0 -1 64 63.743)">
+  <path id="rect4272" d="m54 30-22-25-22 25h16v29h12v-29z" stroke="#000" stroke-width="2" fill="#729fcf"/>
+  <path id="path4210" opacity=".4" d="m32 8 17.6 20h-13.6v29h-8v-29h-13.6z" stroke="#fff" stroke-width="2" fill="none"/>
+  <path id="path4690" opacity=".4" d="m31.995 6.4991-19.809 22 14.778 0.46875c0 2.7922 10.031 2.9103 10.031 0.0625l14.806-0.02894z" fill="url(#linearGradient4698)"/>
+ </g>
 </svg>
