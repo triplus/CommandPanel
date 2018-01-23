@@ -20,15 +20,14 @@
 """Command panel for FreeCAD - Commands."""
 
 import os
-import FreeCAD as App
-import FreeCADGui as Gui
 from PySide import QtGui
 from PySide import QtCore
+import FreeCADGui as Gui
+import FreeCAD as App
 import Command_Panel_Gui as cpg
 import Command_Panel_Common as cpc
 import Command_Panel_Event_Filter as cpef
 
-global currentMenu
 currentMenu = None
 
 menuList = []
@@ -42,14 +41,53 @@ path = os.path.dirname(__file__) + "/Resources/icons/"
 
 class CommandButton(QtGui.QToolButton):
     """Clear currentMenu on button press event."""
-    def __init__(self, parent=None):
+    def __init__(self):
         super(CommandButton, self).__init__()
 
     def mousePressEvent(self, event):
         """Press event."""
         global currentMenu
         currentMenu = None
-        QtGui.QToolButton.mousePressEvent(self, event)
+        super(CommandButton, self).mousePressEvent(event)
+
+
+def buttonFactory():
+    """Create button and apply the settings."""
+    btn = CommandButton()
+    btn.installEventFilter((cpef.InstallEvent(btn)))
+
+    btnStyle = p.GetString("Style")
+
+    if btnStyle == "Text":
+        btn.setToolButtonStyle(QtCore.Qt.ToolButtonTextOnly)
+    elif btnStyle == "IconText":
+        btn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+    elif btnStyle == "TextBelow":
+        btn.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+    else:
+        pass
+
+    if p.GetBool("EnableIconSize", 0):
+        iconSize = p.GetInt("IconSize", 16)
+        btn.setIconSize(QtCore.QSize(iconSize, iconSize))
+
+    if p.GetBool("EnableButtonWidth", 0):
+        btn.setFixedWidth(p.GetInt("ButtonWidth", 30))
+
+    if p.GetBool("EnableFontSize", 0):
+        font = btn.font()
+        font.setPointSize(p.GetInt("FontSize", 8))
+        btn.setFont(font)
+
+    if p.GetString("Layout") == "Expand":
+        policy = btn.sizePolicy()
+        policy.setHorizontalPolicy(QtGui.QSizePolicy.Ignored)
+        btn.setSizePolicy(policy)
+
+    if p.GetBool("AutoRaise", 1):
+        btn.setAutoRaise(True)
+
+    return btn
 
 
 def workbenchButtons(workbench):
@@ -73,9 +111,7 @@ def workbenchButtons(workbench):
         else:
             commands = []
         for cmd in commands:
-            btn = CommandButton()
-            btn.setAutoRaise(True)
-            btn.installEventFilter((cpef.InstallEvent(btn)))
+            btn = buttonFactory()
             if cmd.startswith("CP_Collapse_"):
                 a = QtGui.QAction(btn)
                 try:

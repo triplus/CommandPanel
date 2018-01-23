@@ -1,6 +1,6 @@
 # Command panel for FreeCAD
 # Copyright (C) 2015, 2016 (as part of TabBar) triplus @ FreeCAD
-# Copyright (C) 2017 triplus @ FreeCAD
+# Copyright (C) 2017, 2018 triplus @ FreeCAD
 #
 #
 # This library is free software; you can redistribute it and/or
@@ -19,10 +19,10 @@
 
 """Command panel for FreeCAD - Gui."""
 
-import FreeCADGui as Gui
-import FreeCAD as App
 from PySide import QtGui
 from PySide import QtCore
+import FreeCADGui as Gui
+import FreeCAD as App
 import Command_Panel_Commands as cpcmd
 import Command_Panel_Preferences as cpp
 import Command_Panel_Flow_Layout as flow
@@ -31,17 +31,14 @@ import Command_Panel_Flow_Layout as flow
 mw = Gui.getMainWindow()
 p = App.ParamGet("User parameter:BaseApp/CommandPanel")
 
-layout = flow.FlowLayout()
-
 widget = QtGui.QWidget()
-widget.setLayout(layout)
 
 scroll = QtGui.QScrollArea()
+scroll.setMinimumHeight(16)
 scroll.setWidgetResizable(True)
 scroll.setVerticalScrollBarPolicy((QtCore.Qt.ScrollBarAlwaysOff))
 scroll.setHorizontalScrollBarPolicy((QtCore.Qt.ScrollBarAlwaysOff))
 scroll.setWidget(widget)
-scroll.setMinimumHeight(16)
 
 dock = QtGui.QDockWidget()
 dock.setWindowTitle("Commands")
@@ -92,14 +89,31 @@ def onPreferences():
 def onWorkbench():
     """Populate command panel on workbench activation."""
     workbench = Gui.activeWorkbench().__class__.__name__
-    item = layout.takeAt(0)
-    while item:
-        item.widget().hide()
-        del item
+
+    layout = widget.layout()
+    if layout:
         item = layout.takeAt(0)
+        while item:
+            del item
+            item = layout.takeAt(0)
+        # Workaround: reliably unset layout
+        temp = QtGui.QWidget()
+        temp.setLayout(layout)
+        temp.deleteLater()
+
+    if p.GetString("Layout") == "Expand":
+        layout = QtGui.QVBoxLayout()
+    else:
+        layout = flow.FlowLayout()
+
+    widget.setLayout(layout)
+
     buttons = cpcmd.workbenchButtons(workbench)
     for btn in buttons:
         layout.addWidget(btn)
+
+    if p.GetString("Layout") == "Expand":
+        layout.addStretch()
 
 
 def onStart():

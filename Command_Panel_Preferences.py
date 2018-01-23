@@ -1,6 +1,6 @@
 # Command panel for FreeCAD
 # Copyright (C) 2015, 2016 (as part of TabBar) triplus @ FreeCAD
-# Copyright (C) 2017 triplus @ FreeCAD
+# Copyright (C) 2017, 2018 triplus @ FreeCAD
 #
 #
 # This library is free software; you can redistribute it and/or
@@ -31,6 +31,10 @@ import Command_Panel_Common as cpc
 mw = Gui.getMainWindow()
 p = App.ParamGet("User parameter:BaseApp/CommandPanel")
 path = os.path.dirname(__file__) + "/Resources/icons/"
+
+cBoxWb = None
+cBoxMenu = None
+enabled = None
 
 
 def createWidgets():
@@ -91,13 +95,35 @@ def dialog():
     dia.setLayout(layout)
     layout.addWidget(stack)
 
+    # Button settings
+    btnSettings = QtGui.QPushButton("Settings")
+    btnSettings.setToolTip("Open settings")
+
+    def onSettings():
+        """Stack widget index change."""
+        stack.setCurrentIndex(2)
+
+    btnSettings.clicked.connect(onSettings)
+
+    # Button settings done
+    btnSettingsDone = QtGui.QPushButton("Done")
+    btnSettingsDone.setToolTip("Return to general preferences")
+
+    def onBtnSettingsDone():
+        """Return to general preferences."""
+        btnSettings.clearFocus()
+        stack.setCurrentIndex(0)
+
+    btnSettingsDone.clicked.connect(onBtnSettingsDone)
+
     # Button close
     btnClose = QtGui.QPushButton("Close")
     btnClose.setToolTip("Close the preferences dialog")
     btnClose.clicked.connect(onAccepted)
 
-    stack.insertWidget(0, general(dia, stack, btnClose))
+    stack.insertWidget(0, general(dia, stack, btnClose, btnSettings))
     stack.insertWidget(1, edit(stack))
+    stack.insertWidget(2, settings(stack, btnSettingsDone))
 
     btnClose.setDefault(True)
     btnClose.setFocus()
@@ -105,7 +131,7 @@ def dialog():
     return dia
 
 
-def general(dia, stack, btnClose):
+def general(dia, stack, btnClose, btnSettings):
     """General command panel preferences."""
 
     # Widgets
@@ -220,6 +246,7 @@ def general(dia, stack, btnClose):
     loRight.insertLayout(3, loControls)
 
     loBottom = QtGui.QHBoxLayout()
+    loBottom.addWidget(btnSettings)
     loBottom.addStretch()
     loBottom.addWidget(btnClose)
 
@@ -588,7 +615,7 @@ def general(dia, stack, btnClose):
     enabled.itemDoubleClicked.connect(onEditMenu)
 
     def onStack(n):
-        """Visible widget index change."""
+        """Stack widget index change."""
         if n == 0:
             row = enabled.currentRow()
             index = cBoxMenu.currentIndex()
@@ -703,7 +730,7 @@ def edit(stack):
         grpBoxMenu.blockSignals(False)
 
     def onStack(n):
-        """Visible widget index change."""
+        """Stack widget index change."""
         if n == 1:
             btnEditDone.setDefault(True)
             btnEditDone.setFocus()
@@ -712,3 +739,258 @@ def edit(stack):
     stack.currentChanged.connect(onStack)
 
     return w
+
+
+def settings(stack, btnSettingsDone):
+    """Settings widget for preferences."""
+
+    # Widgets
+    widgetSettings = QtGui.QWidget()
+    layoutMain = QtGui.QVBoxLayout()
+    widgetSettings.setLayout(layoutMain)
+    widget = QtGui.QWidget()
+    layout = QtGui.QVBoxLayout()
+    widget.setLayout(layout)
+    scroll = QtGui.QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setWidget(widget)
+    layoutMain.addWidget(scroll)
+
+    # Style
+    loStyle = QtGui.QVBoxLayout()
+    grpBoxStyle = QtGui.QGroupBox("Style:")
+    grpBoxStyle.setLayout(loStyle)
+    rBtnIcon = QtGui.QRadioButton("Icon", grpBoxStyle)
+    rBtnIcon.setObjectName("Icon")
+    rBtnIcon.setToolTip("Buttons with icon only")
+    rBtnText = QtGui.QRadioButton("Text", grpBoxStyle)
+    rBtnText.setObjectName("Text")
+    rBtnText.setToolTip("Buttons with text only")
+    rBtnIconText = QtGui.QRadioButton("Icon and text", grpBoxStyle)
+    rBtnIconText.setObjectName("IconText")
+    rBtnIconText.setToolTip("Buttons with icon and text")
+    rBtnTextBelow = QtGui.QRadioButton("Text below the icon", grpBoxStyle)
+    rBtnTextBelow.setObjectName("TextBelow")
+    rBtnTextBelow.setToolTip("Buttons with icon and text below the icon")
+    loStyle.addWidget(rBtnIcon)
+    loStyle.addWidget(rBtnText)
+    loStyle.addWidget(rBtnIconText)
+    loStyle.addWidget(rBtnTextBelow)
+
+    btnStyle = p.GetString("Style")
+
+    if btnStyle == "Text":
+        rBtnText.setChecked(True)
+    elif btnStyle == "IconText":
+        rBtnIconText.setChecked(True)
+    elif btnStyle == "TextBelow":
+        rBtnTextBelow.setChecked(True)
+    else:
+        rBtnIcon.setChecked(True)
+
+    def onGrpBoxStyle(checked):
+        """Set button style."""
+        if checked:
+            for i in grpBoxStyle.findChildren(QtGui.QRadioButton):
+                if i.isChecked():
+                    p.SetString("Style", i.objectName())
+
+            cpg.onWorkbench()
+
+    rBtnIcon.toggled.connect(onGrpBoxStyle)
+    rBtnText.toggled.connect(onGrpBoxStyle)
+    rBtnIconText.toggled.connect(onGrpBoxStyle)
+    rBtnTextBelow.toggled.connect(onGrpBoxStyle)
+
+    ckbBtnRaise = QtGui.QCheckBox()
+    ckbBtnRaise.setText("Auto raise")
+    loStyle.addWidget(ckbBtnRaise)
+
+    if p.GetBool("AutoRaise", 1):
+        ckbBtnRaise.setChecked(True)
+
+    def onCkbBtnRaise(checked):
+        """Set button auto raise."""
+        if checked:
+            p.SetBool("AutoRaise", 1)
+        else:
+            p.SetBool("AutoRaise", 0)
+
+        cpg.onWorkbench()
+
+    ckbBtnRaise.stateChanged.connect(onCkbBtnRaise)
+
+    # Size
+    loSize = QtGui.QVBoxLayout()
+    grpBoxSize = QtGui.QGroupBox("Size:")
+    grpBoxSize.setLayout(loSize)
+
+    ckbIconSize = QtGui.QCheckBox()
+    ckbIconSize.setText("Icon")
+    iconSpin = QtGui.QSpinBox()
+    iconSpin.setEnabled(False)
+    iconSpin.setRange(0, 10000)
+    iconSpin.setValue(p.GetInt("IconSize", 16))
+
+    loIcon = QtGui.QHBoxLayout()
+    loIcon.addWidget(ckbIconSize)
+    loIcon.addStretch()
+    loIcon.addWidget(iconSpin)
+
+    ckbTxtSize = QtGui.QCheckBox()
+    ckbTxtSize.setText("Text")
+    txtSpin = QtGui.QSpinBox()
+    txtSpin.setEnabled(False)
+    txtSpin.setRange(0, 10000)
+    txtSpin.setValue(p.GetInt("TextSize", 8))
+
+    loText = QtGui.QHBoxLayout()
+    loText.addWidget(ckbTxtSize)
+    loText.addStretch()
+    loText.addWidget(txtSpin)
+
+    loSize.insertLayout(0, loIcon)
+    loSize.insertLayout(1, loText)
+
+    if p.GetBool("EnableIconSize", 0):
+        ckbIconSize.setChecked(True)
+        iconSpin.setEnabled(True)
+
+    if p.GetBool("EnableFontSize", 0):
+        ckbTxtSize.setChecked(True)
+        txtSpin.setEnabled(True)
+
+    def onCkbIconSize(checked):
+        """Enable icon size setting."""
+        if checked:
+            p.SetBool("EnableIconSize", 1)
+            iconSpin.setEnabled(True)
+            p.SetInt("IconSize", iconSpin.value())
+        else:
+            p.SetBool("EnableIconSize", 0)
+            iconSpin.setEnabled(False)
+
+        cpg.onWorkbench()
+
+    ckbIconSize.stateChanged.connect(onCkbIconSize)
+
+    def onIconSize(n):
+        """Set button icon size."""
+        p.SetInt("IconSize", n)
+        cpg.onWorkbench()
+
+    iconSpin.valueChanged.connect(onIconSize)
+
+    def onCkbTxtSize(checked):
+        """Enable font size setting."""
+        if checked:
+            p.SetBool("EnableFontSize", 1)
+            txtSpin.setEnabled(True)
+            p.SetInt("FontSize", txtSpin.value())
+        else:
+            p.SetBool("EnableFontSize", 0)
+            txtSpin.setEnabled(False)
+
+        cpg.onWorkbench()
+
+    ckbTxtSize.stateChanged.connect(onCkbTxtSize)
+
+    def onTxtSize(n):
+        """Set button font size."""
+        p.SetInt("FontSize", n)
+        cpg.onWorkbench()
+
+    txtSpin.valueChanged.connect(onTxtSize)
+
+    # Layout (buttons)
+    loLayout = QtGui.QVBoxLayout()
+    grpBoxLayout = QtGui.QGroupBox("Layout:")
+    grpBoxLayout.setLayout(loLayout)
+
+    rLoFlow = QtGui.QRadioButton("Flow", grpBoxLayout)
+    rLoFlow.setObjectName("Flow")
+    rLoFlow.setToolTip("Automatically sort buttons in columns")
+    rLoExpand = QtGui.QRadioButton("Expand", grpBoxLayout)
+    rLoExpand.setObjectName("Expand")
+    rLoExpand.setToolTip("Expand each button to available column width")
+    loLayout.addWidget(rLoFlow)
+    loLayout.addWidget(rLoExpand)
+
+    loType = p.GetString("Layout")
+
+    if loType == "Expand":
+        rLoExpand.setChecked(True)
+    else:
+        rLoFlow.setChecked(True)
+
+    def onGrpBoxLayout(checked):
+        """Set layout type."""
+        if checked:
+            for i in grpBoxLayout.findChildren(QtGui.QRadioButton):
+                if i.isChecked():
+                    p.SetString("Layout", i.objectName())
+
+            cpg.onWorkbench()
+
+    rLoFlow.toggled.connect(onGrpBoxLayout)
+    rLoExpand.toggled.connect(onGrpBoxLayout)
+
+    ckbBtnWidth = QtGui.QCheckBox()
+    ckbBtnWidth.setText("Button width")
+    btnWidthSpin = QtGui.QSpinBox()
+    btnWidthSpin.setEnabled(False)
+    btnWidthSpin.setRange(0, 10000)
+    btnWidthSpin.setValue(p.GetInt("ButtonWidth", 30))
+
+    loBtnWidth = QtGui.QHBoxLayout()
+    loBtnWidth.addWidget(ckbBtnWidth)
+    loBtnWidth.addStretch()
+    loBtnWidth.addWidget(btnWidthSpin)
+
+    loLayout.insertLayout(2, loBtnWidth)
+
+    if p.GetBool("EnableButtonWidth", 0):
+        ckbBtnWidth.setChecked(True)
+        btnWidthSpin.setEnabled(True)
+
+    def onCkbBtnWidth(checked):
+        """Enable button width size setting."""
+        if checked:
+            p.SetBool("EnableButtonWidth", 1)
+            btnWidthSpin.setEnabled(True)
+            p.SetInt("ButtonWidth", btnWidthSpin.value())
+        else:
+            p.SetBool("EnableButtonWidth", 0)
+            btnWidthSpin.setEnabled(False)
+
+        cpg.onWorkbench()
+
+    ckbBtnWidth.stateChanged.connect(onCkbBtnWidth)
+
+    def onButtonWidth(n):
+        """Set button width size."""
+        p.SetInt("ButtonWidth", n)
+        cpg.onWorkbench()
+
+    btnWidthSpin.valueChanged.connect(onButtonWidth)
+
+    loBtnSettings = QtGui.QHBoxLayout()
+    loBtnSettings.addStretch()
+    loBtnSettings.addWidget(btnSettingsDone)
+
+    # Layout
+    layout.addWidget(grpBoxStyle)
+    layout.addWidget(grpBoxSize)
+    layout.addWidget(grpBoxLayout)
+    layout.addStretch()
+    layoutMain.insertLayout(1, loBtnSettings)
+
+    def onStack(n):
+        """Stack widget index change."""
+        if n == 2:
+            btnSettingsDone.setDefault(True)
+            btnSettingsDone.setFocus()
+
+    stack.currentChanged.connect(onStack)
+
+    return widgetSettings
