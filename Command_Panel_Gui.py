@@ -19,6 +19,7 @@
 
 """Command panel for FreeCAD - Gui."""
 
+
 from PySide import QtGui
 from PySide import QtCore
 import FreeCADGui as Gui
@@ -116,6 +117,18 @@ def onWorkbench():
         layout.addStretch()
 
 
+def onInvoke():
+    """Hide or show command panel at mouse position."""
+    if dock.isVisible():
+        dock.toggleViewAction().trigger()
+    else:
+        dock.setFloating(True)
+        pos = QtGui.QCursor.pos()
+        dock.move(pos.x() - dock.size().width() / 2,
+                  pos.y() - dock.size().height() / 2)
+        dock.setVisible(True)
+
+
 def onStart():
     """Start command panel."""
     start = False
@@ -130,6 +143,12 @@ def onStart():
         onWorkbench()
         accessoriesMenu()
         mw.workbenchActivated.connect(onWorkbench)
+        a = QtGui.QAction(mw)
+        mw.addAction(a)
+        a.setText("Invoke command panel")
+        a.setObjectName("InvokeCommandPanel")
+        a.setShortcut(QtGui.QKeySequence("Ctrl+Q"))
+        a.triggered.connect(onInvoke)
 
 
 t = QtCore.QTimer()
