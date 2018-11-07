@@ -116,8 +116,10 @@ class FlowLayout(QtGui.QLayout):
 
         for item in self.itemList:
             wid = item.widget()
-            spaceX = self.spacing() + wid.style().layoutSpacing(QtGui.QSizePolicy.ToolButton, QtGui.QSizePolicy.ToolButton, QtCore.Qt.Horizontal)
-            spaceY = self.spacing() + wid.style().layoutSpacing(QtGui.QSizePolicy.ToolButton, QtGui.QSizePolicy.ToolButton, QtCore.Qt.Vertical)
+            # spaceX = self.spacing() + wid.style().layoutSpacing(QtGui.QSizePolicy.ToolButton, QtGui.QSizePolicy.ToolButton, QtCore.Qt.Horizontal)
+            # spaceY = self.spacing() + wid.style().layoutSpacing(QtGui.QSizePolicy.ToolButton, QtGui.QSizePolicy.ToolButton, QtCore.Qt.Vertical)
+            spaceX = 5
+            spaceY = 5
             nextX = x + item.sizeHint().width() + spaceX
             if nextX - spaceX > rect.right() and lineHeight > 0:
                 x = rect.x()
