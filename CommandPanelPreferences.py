@@ -909,31 +909,49 @@ def settings(stack, btnSettingsDone):
 
     rLoFlow = QtGui.QRadioButton("Flow", grpBoxLayout)
     rLoFlow.setObjectName("Flow")
-    rLoFlow.setToolTip("Automatically sort buttons in columns")
-    rLoExpand = QtGui.QRadioButton("Expand", grpBoxLayout)
-    rLoExpand.setObjectName("Expand")
-    rLoExpand.setToolTip("Expand each button to available column width")
+    rLoFlow.setToolTip("Layout buttons based on the available width")
+    rLoGrid = QtGui.QRadioButton("Grid", grpBoxLayout)
+    rLoGrid.setObjectName("Grid")
+    rLoGrid.setToolTip("Layout buttons in a grid")
     loLayout.addWidget(rLoFlow)
-    loLayout.addWidget(rLoExpand)
+
+    columnSpin = QtGui.QSpinBox()
+    columnSpin.setRange(1, 10000)
+    columnSpin.setValue(p.GetInt("ColumnNumber", 1))
+
+    loGrid = QtGui.QHBoxLayout()
+    loGrid.addWidget(rLoGrid)
+    loGrid.addStretch()
+    loGrid.addWidget(columnSpin)
+
+    loLayout.insertLayout(1, loGrid)
 
     loType = p.GetString("Layout")
-
-    if loType == "Expand":
-        rLoExpand.setChecked(True)
+    if loType == "Grid":
+        rLoGrid.setChecked(True)
     else:
         rLoFlow.setChecked(True)
 
     def onGrpBoxLayout(checked):
-        """Set layout type."""
+        """Set the layout type."""
         if checked:
             for i in grpBoxLayout.findChildren(QtGui.QRadioButton):
                 if i.isChecked():
                     p.SetString("Layout", i.objectName())
 
+            cpg.setLayout()
             cpg.onWorkbench()
 
     rLoFlow.toggled.connect(onGrpBoxLayout)
-    rLoExpand.toggled.connect(onGrpBoxLayout)
+    rLoGrid.toggled.connect(onGrpBoxLayout)
+
+    def onColumnSpin(n):
+        """Set number of columns."""
+        p.SetInt("ColumnNumber", n)
+        cpg.onWorkbench()
+
+    columnSpin.valueChanged.connect(onColumnSpin)
+
 
     ckbBtnWidth = QtGui.QCheckBox()
     ckbBtnWidth.setText("Button width")

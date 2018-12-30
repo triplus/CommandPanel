@@ -29,10 +29,12 @@ import CommandPanelPreferences as cpp
 import CommandPanelFlowLayout as flow
 
 
+layout = None
 mw = Gui.getMainWindow()
 p = App.ParamGet("User parameter:BaseApp/CommandPanel")
 
 widget = QtGui.QWidget()
+widget.setContentsMargins(0, 0, 0, 0)
 
 scroll = QtGui.QScrollArea()
 scroll.setMinimumHeight(16)
@@ -46,6 +48,36 @@ dock.setWindowTitle("Commands")
 dock.setObjectName("CommandPanel")
 dock.setWidget(scroll)
 mw.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+
+# Layouts
+layoutGlobal = QtGui.QVBoxLayout()
+widget.setLayout(layoutGlobal)
+
+layoutFlow = flow.FlowLayout()
+layoutGrid = QtGui.QGridLayout()
+
+layoutStretch = QtGui.QVBoxLayout()
+layoutStretch.addStretch()
+
+layoutGlobal.insertLayout(0, layoutFlow)
+layoutGlobal.insertLayout(1, layoutGrid)
+layoutGlobal.insertLayout(2, layoutStretch)
+
+
+def setLayout():
+    """Use Grid or Flow layout"""
+    global layout
+
+    if p.GetString("Layout") == "Grid":
+        layoutFlow.setEnabled(False)
+        layoutGrid.setEnabled(True)
+        layoutStretch.setEnabled(True)
+        layout = layoutGrid
+    else:
+        layoutGrid.setEnabled(False)
+        layoutStretch.setEnabled(False)
+        layoutFlow.setEnabled(True)
+        layout = layoutFlow
 
 
 def accessoriesMenu():
@@ -91,30 +123,27 @@ def onWorkbench():
     """Populate command panel on workbench activation."""
     workbench = Gui.activeWorkbench().__class__.__name__
 
-    layout = widget.layout()
     if layout:
-        item = layout.takeAt(0)
-        while item:
-            del item
+        while not layout.isEmpty():
             item = layout.takeAt(0)
-        # Workaround: reliably unset layout
-        temp = QtGui.QWidget()
-        temp.setLayout(layout)
-        temp.deleteLater()
-
-    if p.GetString("Layout") == "Expand":
-        layout = QtGui.QVBoxLayout()
-    else:
-        layout = flow.FlowLayout()
-
-    widget.setLayout(layout)
+            del item
 
     buttons = cpcmd.workbenchButtons(workbench)
-    for btn in buttons:
-        layout.addWidget(btn)
 
-    if p.GetString("Layout") == "Expand":
-        layout.addStretch()
+    if p.GetString("Layout") == "Grid":
+        columns = p.GetInt("ColumnNumber", 1) - 1
+        x = 0
+        y = 0
+        for btn in buttons:
+            if y > columns:
+                y = 0
+                x += 1
+            layout.addWidget(btn, x, y)
+            y += 1
+    else:
+        for btn in buttons:
+            layout.addWidget(btn)
+
 
 
 def onInvoke():
@@ -149,6 +178,9 @@ def onStart():
         a.setObjectName("InvokeCommandPanel")
         a.setShortcut(QtGui.QKeySequence("Ctrl+Q"))
         a.triggered.connect(onInvoke)
+
+
+setLayout()
 
 
 t = QtCore.QTimer()

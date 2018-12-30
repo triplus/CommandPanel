@@ -79,7 +79,7 @@ def buttonFactory():
         font.setPointSize(p.GetInt("FontSize", 8))
         btn.setFont(font)
 
-    if p.GetString("Layout") == "Expand":
+    if p.GetString("Layout") == "Grid":
         policy = btn.sizePolicy()
         policy.setHorizontalPolicy(QtGui.QSizePolicy.Ignored)
         btn.setSizePolicy(policy)
@@ -158,7 +158,11 @@ def workbenchButtons(workbench):
                                cmd +
                                " is currently not available")
                 btn.setIcon(QtGui.QIcon(":/icons/freecad"))
-            buttonList.append(btn)
+
+            if p.GetString("Layout") == "Grid" and btn.objectName() == "CP_Spacer":
+                pass
+            else:
+                buttonList.append(btn)
 
     for m in menuList:
         m.triggered.connect(onMenuTriggered)
