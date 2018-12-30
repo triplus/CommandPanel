@@ -23,4 +23,4 @@ p = FreeCAD.ParamGet("User parameter:BaseApp/CommandPanel")
 
 
 if p.GetBool("Enabled", 1):
-    import Command_Panel_Gui
+    import CommandPanelGui

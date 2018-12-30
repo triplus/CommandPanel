@@ -24,9 +24,9 @@ from PySide import QtGui
 from PySide import QtCore
 import FreeCADGui as Gui
 import FreeCAD as App
-import Command_Panel_Gui as cpg
-import Command_Panel_Common as cpc
-import Command_Panel_Event_Filter as cpef
+import CommandPanelGui as cpg
+import CommandPanelCommon as cpc
+import CommandPanelEventFilter as cpef
 
 currentMenu = None
 
@@ -121,7 +121,7 @@ def workbenchButtons(workbench):
                 data = ",".join([workbench, gUid, str(0)])
                 a.setData(data)
                 a.setText("Collapse")
-                a.setIcon(QtGui.QIcon(path + "CommandPanel_Collapse.svg"))
+                a.setIcon(QtGui.QIcon(path + "CommandPanelCollapse.svg"))
                 a.setToolTip("Collapse menu")
                 btn.setDefaultAction(a)
                 mapperExpandCollapse.setMapping(btn, data)
@@ -214,7 +214,7 @@ def menuButton(workbench, base, cmd, btn, actions):
 
         e = QtGui.QAction(menu)
         e.setText("Expand")
-        e.setIcon(QtGui.QIcon(path + "CommandPanel_Expand.svg"))
+        e.setIcon(QtGui.QIcon(path + "CommandPanelExpand.svg"))
         e.setToolTip("Expand menu")
         e.setData(data)
 

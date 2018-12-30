@@ -24,8 +24,8 @@ import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
 from PySide import QtCore
-import Command_Panel_Gui as cpg
-import Command_Panel_Common as cpc
+import CommandPanelGui as cpg
+import CommandPanelCommon as cpc
 
 
 mw = Gui.getMainWindow()
@@ -150,7 +150,7 @@ def general(dia, stack, btnClose, btnSettings):
     # Reset workbench
     btnResetWb = QtGui.QPushButton()
     btnResetWb.setToolTip("Reset workbench to defaults")
-    btnResetWb.setIcon(QtGui.QIcon(path + "CommandPanel_Reset.svg"))
+    btnResetWb.setIcon(QtGui.QIcon(path + "CommandPanelReset.svg"))
 
     # Checkbox default menu
     ckDefault = QtGui.QCheckBox()
@@ -159,55 +159,55 @@ def general(dia, stack, btnClose, btnSettings):
     # Button add workbench menu
     btnAddWbMenu = QtGui.QPushButton()
     btnAddWbMenu.setToolTip("Add new workbench menu")
-    btnAddWbMenu.setIcon(QtGui.QIcon(path + "CommandPanel_Add.svg"))
+    btnAddWbMenu.setIcon(QtGui.QIcon(path + "CommandPanelAdd.svg"))
 
     # Button remove workbench menu
     btnRemoveWbMenu = QtGui.QPushButton()
     btnRemoveWbMenu.setToolTip("Remove currently selected workbench menu")
-    btnRemoveWbMenu.setIcon(QtGui.QIcon(path + "CommandPanel_Remove.svg"))
+    btnRemoveWbMenu.setIcon(QtGui.QIcon(path + "CommandPanelRemove.svg"))
 
     # Button add command
     btnAddCommand = QtGui.QPushButton()
     btnAddCommand.setToolTip("Add selected command")
-    btnAddCommand.setIcon(QtGui.QIcon(path + "CommandPanel_AddCommand.svg"))
+    btnAddCommand.setIcon(QtGui.QIcon(path + "CommandPanelAddCommand.svg"))
 
     # Button remove command
     btnRemoveCommand = QtGui.QPushButton()
     btnRemoveCommand.setToolTip("Remove selected command")
     btnRemoveCommand.setIcon(QtGui.QIcon(path +
-                                         "CommandPanel_RemoveCommand.svg"))
+                                         "CommandPanelRemoveCommand.svg"))
 
     # Button move up
     btnMoveUp = QtGui.QPushButton()
     btnMoveUp.setToolTip("Move selected command up")
-    btnMoveUp.setIcon(QtGui.QIcon(path + "CommandPanel_Up.svg"))
+    btnMoveUp.setIcon(QtGui.QIcon(path + "CommandPanelUp.svg"))
 
     # Button move down
     btnMoveDown = QtGui.QPushButton()
     btnMoveDown.setToolTip("Move selected command down")
-    btnMoveDown.setIcon(QtGui.QIcon(path + "CommandPanel_Down.svg"))
+    btnMoveDown.setIcon(QtGui.QIcon(path + "CommandPanelDown.svg"))
 
     # Button add separator
     btnAddSeparator = QtGui.QPushButton()
     btnAddSeparator.setToolTip("Add separator")
     btnAddSeparator.setIcon(QtGui.QIcon(path +
-                                        "CommandPanel_AddSeparator.svg"))
+                                        "CommandPanelAddSeparator.svg"))
 
     # Button add spacer
     btnAddSpacer = QtGui.QPushButton()
     btnAddSpacer.setToolTip("Add spacer")
-    btnAddSpacer.setIcon(QtGui.QIcon(path + "CommandPanel_AddSpacer.svg"))
+    btnAddSpacer.setIcon(QtGui.QIcon(path + "CommandPanelAddSpacer.svg"))
 
     # Button add menu
     btnAddMenu = QtGui.QPushButton()
     btnAddMenu.setToolTip("Add menu")
-    btnAddMenu.setIcon(QtGui.QIcon(path + "CommandPanel_AddMenu.svg"))
+    btnAddMenu.setIcon(QtGui.QIcon(path + "CommandPanelAddMenu.svg"))
 
     # Button edit menu
     btnEditMenu = QtGui.QPushButton()
     btnEditMenu.setEnabled(False)
     btnEditMenu.setToolTip("Edit menu")
-    btnEditMenu.setIcon(QtGui.QIcon(path + "CommandPanel_EditMenu.svg"))
+    btnEditMenu.setIcon(QtGui.QIcon(path + "CommandPanelEditMenu.svg"))
 
     # Layout
     loPanels = QtGui.QHBoxLayout()
@@ -458,11 +458,11 @@ def general(dia, stack, btnClose, btnSettings):
                 item.setText("Separator")
                 item.setData(QtCore.Qt.UserRole, i)
                 item.setIcon(QtGui.QIcon(path +
-                                         "CommandPanel_AddSeparator.svg"))
+                                         "CommandPanelAddSeparator.svg"))
             elif i == "CP_Spacer":
                 item.setText("Spacer")
                 item.setData(QtCore.Qt.UserRole, i)
-                item.setIcon(QtGui.QIcon(path + "CommandPanel_AddSpacer.svg"))
+                item.setIcon(QtGui.QIcon(path + "CommandPanelAddSpacer.svg"))
             elif i.startswith("CP_Menu"):
                 try:
                     g = cpc.findGroup(baseGroup(), i.split("CP_Menu_", 1)[1])
@@ -477,7 +477,7 @@ def general(dia, stack, btnClose, btnSettings):
                 else:
                     item.setText("Menu")
                 item.setData(QtCore.Qt.UserRole, i)
-                item.setIcon(QtGui.QIcon(path + "CommandPanel_AddMenu.svg"))
+                item.setIcon(QtGui.QIcon(path + "CommandPanelAddMenu.svg"))
             elif i in actions:
                 item.setText(actions[i].text().replace("&", ""))
                 item.setToolTip(actions[i].toolTip())
@@ -560,7 +560,7 @@ def general(dia, stack, btnClose, btnSettings):
         enabled.setCurrentRow(row + 1)
         item.setText("Separator")
         item.setData(QtCore.Qt.UserRole, "CP_Separator")
-        item.setIcon(QtGui.QIcon(path + "CommandPanel_AddSeparator.svg"))
+        item.setIcon(QtGui.QIcon(path + "CommandPanelAddSeparator.svg"))
         saveEnabled()
 
     btnAddSeparator.clicked.connect(onBtnAddSeparator)
@@ -573,7 +573,7 @@ def general(dia, stack, btnClose, btnSettings):
         enabled.setCurrentRow(row + 1)
         item.setText("Spacer")
         item.setData(QtCore.Qt.UserRole, "CP_Spacer")
-        item.setIcon(QtGui.QIcon(path + "CommandPanel_AddSpacer.svg"))
+        item.setIcon(QtGui.QIcon(path + "CommandPanelAddSpacer.svg"))
         saveEnabled()
 
     btnAddSpacer.clicked.connect(onBtnAddSpacer)
@@ -586,7 +586,7 @@ def general(dia, stack, btnClose, btnSettings):
         enabled.setCurrentRow(row + 1)
         item.setText("Menu")
         item.setData(QtCore.Qt.UserRole, "CP_Menu")
-        item.setIcon(QtGui.QIcon(path + "CommandPanel_AddMenu.svg"))
+        item.setIcon(QtGui.QIcon(path + "CommandPanelAddMenu.svg"))
         saveEnabled()
         onSelectionChanged()
 

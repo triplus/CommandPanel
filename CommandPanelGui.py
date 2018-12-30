@@ -24,9 +24,9 @@ from PySide import QtGui
 from PySide import QtCore
 import FreeCADGui as Gui
 import FreeCAD as App
-import Command_Panel_Commands as cpcmd
-import Command_Panel_Preferences as cpp
-import Command_Panel_Flow_Layout as flow
+import CommandPanelCommands as cpcmd
+import CommandPanelPreferences as cpp
+import CommandPanelFlowLayout as flow
 
 
 mw = Gui.getMainWindow()
