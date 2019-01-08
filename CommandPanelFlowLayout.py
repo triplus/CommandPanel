@@ -45,8 +45,13 @@
 
 """Command panel for FreeCAD - FlowLayout."""
 
+
 from PySide import QtGui
 from PySide import QtCore
+import CommandPanelCommon as cpc
+
+
+p = cpc.p
 
 
 class FlowLayout(QtGui.QLayout):
@@ -60,10 +65,15 @@ class FlowLayout(QtGui.QLayout):
 
         self.itemList = []
 
+        self.spaceXY = p.GetInt("ButtonSpacing", 5)
+
     def __del__(self):
         item = self.takeAt(0)
         while item:
             item = self.takeAt(0)
+
+    def setSpaceXY(self):
+        self.spaceXY = p.GetInt("ButtonSpacing", 5)
 
     def addItem(self, item):
         self.itemList.append(item)
@@ -106,7 +116,8 @@ class FlowLayout(QtGui.QLayout):
         for item in self.itemList:
             size = size.expandedTo(item.minimumSize())
 
-        size += QtCore.QSize(2 * self.contentsMargins().top(), 2 * self.contentsMargins().top())
+        size += QtCore.QSize(2 * self.contentsMargins().top(),
+                             2 * self.contentsMargins().top())
         return size
 
     def doLayout(self, rect, testOnly):
@@ -116,27 +127,24 @@ class FlowLayout(QtGui.QLayout):
 
         for item in self.itemList:
             wid = item.widget()
-            # spaceX = self.spacing() + wid.style().layoutSpacing(QtGui.QSizePolicy.ToolButton, QtGui.QSizePolicy.ToolButton, QtCore.Qt.Horizontal)
-            # spaceY = self.spacing() + wid.style().layoutSpacing(QtGui.QSizePolicy.ToolButton, QtGui.QSizePolicy.ToolButton, QtCore.Qt.Vertical)
-            spaceX = 5
-            spaceY = 5
-            nextX = x + item.sizeHint().width() + spaceX
-            if nextX - spaceX > rect.right() and lineHeight > 0:
+            nextX = x + item.sizeHint().width() + self.spaceXY
+            if nextX - self.spaceXY > rect.right() and lineHeight > 0:
                 x = rect.x()
-                y = y + lineHeight + spaceY
-                nextX = x + item.sizeHint().width() + spaceX
+                y = y + lineHeight + self.spaceXY
+                nextX = x + item.sizeHint().width() + self.spaceXY
                 lineHeight = 0
             elif wid.objectName() == "CP_Spacer":
                 wid.setFixedSize(0, 0)
                 x = rect.x()
-                y = y + lineHeight + spaceY
+                y = y + lineHeight + self.spaceXY
                 nextX = x + item.sizeHint().width()
                 lineHeight = 0
             else:
                 pass
 
             if not testOnly:
-                item.setGeometry(QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
+                item.setGeometry(QtCore.QRect(QtCore.QPoint(x, y),
+                                              item.sizeHint()))
 
             x = nextX
             lineHeight = max(lineHeight, item.sizeHint().height())

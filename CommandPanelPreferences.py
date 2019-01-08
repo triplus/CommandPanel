@@ -1,6 +1,6 @@
 # Command panel for FreeCAD
 # Copyright (C) 2015, 2016 (as part of TabBar) triplus @ FreeCAD
-# Copyright (C) 2017, 2018 triplus @ FreeCAD
+# Copyright (C) 2017, 2018, 2019 triplus @ FreeCAD
 #
 #
 # This library is free software; you can redistribute it and/or
@@ -19,8 +19,8 @@
 
 """Command panel for FreeCAD - Preferences."""
 
+
 import os
-import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
 from PySide import QtCore
@@ -28,8 +28,8 @@ import CommandPanelGui as cpg
 import CommandPanelCommon as cpc
 
 
+p = cpc.p
 mw = Gui.getMainWindow()
-p = App.ParamGet("User parameter:BaseApp/CommandPanel")
 path = os.path.dirname(__file__) + "/Resources/icons/"
 
 cBoxWb = None
@@ -756,6 +756,62 @@ def settings(stack, btnSettingsDone):
     scroll.setWidget(widget)
     layoutMain.addWidget(scroll)
 
+    # Layout (buttons)
+    loLayout = QtGui.QVBoxLayout()
+    grpBoxLayout = QtGui.QGroupBox("Layout:")
+    grpBoxLayout.setLayout(loLayout)
+
+    rLoFlow = QtGui.QRadioButton("Flow", grpBoxLayout)
+    rLoFlow.setObjectName("Flow")
+    rLoFlow.setToolTip("Layout buttons based on the available width")
+    rLoGrid = QtGui.QRadioButton("Grid", grpBoxLayout)
+    rLoGrid.setObjectName("Grid")
+    rLoGrid.setToolTip("Layout buttons in a grid")
+    loLayout.addWidget(rLoFlow)
+
+    columnSpin = QtGui.QSpinBox()
+    columnSpin.setEnabled(False)
+    columnSpin.setRange(1, 10000)
+    columnSpin.setValue(p.GetInt("ColumnNumber", 1))
+
+    loGrid = QtGui.QHBoxLayout()
+    loGrid.addWidget(rLoGrid)
+    loGrid.addStretch()
+    loGrid.addWidget(columnSpin)
+
+    loLayout.insertLayout(1, loGrid)
+
+    loType = p.GetString("Layout")
+    if loType == "Grid":
+        rLoGrid.setChecked(True)
+        columnSpin.setEnabled(True)
+    else:
+        rLoFlow.setChecked(True)
+
+    def onGrpBoxLayout(checked):
+        """Set the layout type."""
+        if checked:
+            for i in grpBoxLayout.findChildren(QtGui.QRadioButton):
+                if i.isChecked():
+                    p.SetString("Layout", i.objectName())
+                    if i.objectName() == "Grid":
+                        columnSpin.setEnabled(True)
+                    else:
+                        columnSpin.setEnabled(False)
+
+            cpg.setLayout()
+            cpg.onWorkbench()
+
+    rLoFlow.toggled.connect(onGrpBoxLayout)
+    rLoGrid.toggled.connect(onGrpBoxLayout)
+
+    def onColumnSpin(n):
+        """Set number of columns."""
+        p.SetInt("ColumnNumber", n)
+        cpg.onWorkbench()
+
+    columnSpin.valueChanged.connect(onColumnSpin)
+
     # Style
     loStyle = QtGui.QVBoxLayout()
     grpBoxStyle = QtGui.QGroupBox("Style:")
@@ -802,14 +858,14 @@ def settings(stack, btnSettingsDone):
     rBtnIconText.toggled.connect(onGrpBoxStyle)
     rBtnTextBelow.toggled.connect(onGrpBoxStyle)
 
-    ckbBtnRaise = QtGui.QCheckBox()
-    ckbBtnRaise.setText("Auto raise")
-    loStyle.addWidget(ckbBtnRaise)
+    ckBoxBtnRaise = QtGui.QCheckBox()
+    ckBoxBtnRaise.setText("Auto raise")
+    loStyle.addWidget(ckBoxBtnRaise)
 
     if p.GetBool("AutoRaise", 1):
-        ckbBtnRaise.setChecked(True)
+        ckBoxBtnRaise.setChecked(True)
 
-    def onCkbBtnRaise(checked):
+    def onCkBoxBtnRaise(checked):
         """Set button auto raise."""
         if checked:
             p.SetBool("AutoRaise", 1)
@@ -818,49 +874,100 @@ def settings(stack, btnSettingsDone):
 
         cpg.onWorkbench()
 
-    ckbBtnRaise.stateChanged.connect(onCkbBtnRaise)
+    ckBoxBtnRaise.stateChanged.connect(onCkBoxBtnRaise)
 
     # Size
     loSize = QtGui.QVBoxLayout()
     grpBoxSize = QtGui.QGroupBox("Size:")
     grpBoxSize.setLayout(loSize)
 
-    ckbIconSize = QtGui.QCheckBox()
-    ckbIconSize.setText("Icon")
+    ckBoxIconSize = QtGui.QCheckBox()
+    ckBoxIconSize.setText("Icon")
     iconSpin = QtGui.QSpinBox()
     iconSpin.setEnabled(False)
-    iconSpin.setRange(0, 10000)
+    iconSpin.setRange(1, 10000)
     iconSpin.setValue(p.GetInt("IconSize", 16))
 
     loIcon = QtGui.QHBoxLayout()
-    loIcon.addWidget(ckbIconSize)
+    loIcon.addWidget(ckBoxIconSize)
     loIcon.addStretch()
     loIcon.addWidget(iconSpin)
 
-    ckbTxtSize = QtGui.QCheckBox()
-    ckbTxtSize.setText("Text")
+    ckBoxTxtSize = QtGui.QCheckBox()
+    ckBoxTxtSize.setText("Text")
     txtSpin = QtGui.QSpinBox()
     txtSpin.setEnabled(False)
-    txtSpin.setRange(0, 10000)
+    txtSpin.setRange(1, 10000)
     txtSpin.setValue(p.GetInt("TextSize", 8))
 
     loText = QtGui.QHBoxLayout()
-    loText.addWidget(ckbTxtSize)
+    loText.addWidget(ckBoxTxtSize)
     loText.addStretch()
     loText.addWidget(txtSpin)
 
+    ckBoxBtnWidth = QtGui.QCheckBox()
+    ckBoxBtnWidth.setText("Button width")
+    btnWidthSpin = QtGui.QSpinBox()
+    btnWidthSpin.setEnabled(False)
+    btnWidthSpin.setRange(1, 10000)
+    btnWidthSpin.setValue(p.GetInt("ButtonWidth", 30))
+
+    loBtnWidth = QtGui.QHBoxLayout()
+    loBtnWidth.addWidget(ckBoxBtnWidth)
+    loBtnWidth.addStretch()
+    loBtnWidth.addWidget(btnWidthSpin)
+
+    ckBoxBtnHeight = QtGui.QCheckBox()
+    ckBoxBtnHeight.setText("Button height")
+    btnHeightSpin = QtGui.QSpinBox()
+    btnHeightSpin.setEnabled(False)
+    btnHeightSpin.setRange(1, 10000)
+    btnHeightSpin.setValue(p.GetInt("ButtonHeight", 30))
+
+    loBtnHeight = QtGui.QHBoxLayout()
+    loBtnHeight.addWidget(ckBoxBtnHeight)
+    loBtnHeight.addStretch()
+    loBtnHeight.addWidget(btnHeightSpin)
+
+    ckBoxBtnSpacing = QtGui.QCheckBox()
+    ckBoxBtnSpacing.setText("Spacing")
+    btnSpacingSpin = QtGui.QSpinBox()
+    btnSpacingSpin.setEnabled(False)
+    btnSpacingSpin.setRange(1, 10000)
+    btnSpacingSpin.setValue(p.GetInt("ButtonSpacing", 5))
+
+    loBtnSpacing = QtGui.QHBoxLayout()
+    loBtnSpacing.addWidget(ckBoxBtnSpacing)
+    loBtnSpacing.addStretch()
+    loBtnSpacing.addWidget(btnSpacingSpin)
+
     loSize.insertLayout(0, loIcon)
     loSize.insertLayout(1, loText)
+    loSize.insertLayout(2, loBtnWidth)
+    loSize.insertLayout(3, loBtnHeight)
+    loSize.insertLayout(4, loBtnSpacing)
 
     if p.GetBool("EnableIconSize", 0):
-        ckbIconSize.setChecked(True)
+        ckBoxIconSize.setChecked(True)
         iconSpin.setEnabled(True)
 
     if p.GetBool("EnableFontSize", 0):
-        ckbTxtSize.setChecked(True)
+        ckBoxTxtSize.setChecked(True)
         txtSpin.setEnabled(True)
 
-    def onCkbIconSize(checked):
+    if p.GetBool("EnableButtonWidth", 0):
+        ckBoxBtnWidth.setChecked(True)
+        btnWidthSpin.setEnabled(True)
+
+    if p.GetBool("EnableButtonHeight", 0):
+        ckBoxBtnHeight.setChecked(True)
+        btnHeightSpin.setEnabled(True)
+
+    if p.GetBool("EnableButtonSpacing", 0):
+        ckBoxBtnSpacing.setChecked(True)
+        btnSpacingSpin.setEnabled(True)
+
+    def onCkBoxIconSize(checked):
         """Enable icon size setting."""
         if checked:
             p.SetBool("EnableIconSize", 1)
@@ -872,7 +979,7 @@ def settings(stack, btnSettingsDone):
 
         cpg.onWorkbench()
 
-    ckbIconSize.stateChanged.connect(onCkbIconSize)
+    ckBoxIconSize.stateChanged.connect(onCkBoxIconSize)
 
     def onIconSize(n):
         """Set button icon size."""
@@ -881,7 +988,7 @@ def settings(stack, btnSettingsDone):
 
     iconSpin.valueChanged.connect(onIconSize)
 
-    def onCkbTxtSize(checked):
+    def onCkBoxTxtSize(checked):
         """Enable font size setting."""
         if checked:
             p.SetBool("EnableFontSize", 1)
@@ -893,7 +1000,7 @@ def settings(stack, btnSettingsDone):
 
         cpg.onWorkbench()
 
-    ckbTxtSize.stateChanged.connect(onCkbTxtSize)
+    ckBoxTxtSize.stateChanged.connect(onCkBoxTxtSize)
 
     def onTxtSize(n):
         """Set button font size."""
@@ -902,76 +1009,7 @@ def settings(stack, btnSettingsDone):
 
     txtSpin.valueChanged.connect(onTxtSize)
 
-    # Layout (buttons)
-    loLayout = QtGui.QVBoxLayout()
-    grpBoxLayout = QtGui.QGroupBox("Layout:")
-    grpBoxLayout.setLayout(loLayout)
-
-    rLoFlow = QtGui.QRadioButton("Flow", grpBoxLayout)
-    rLoFlow.setObjectName("Flow")
-    rLoFlow.setToolTip("Layout buttons based on the available width")
-    rLoGrid = QtGui.QRadioButton("Grid", grpBoxLayout)
-    rLoGrid.setObjectName("Grid")
-    rLoGrid.setToolTip("Layout buttons in a grid")
-    loLayout.addWidget(rLoFlow)
-
-    columnSpin = QtGui.QSpinBox()
-    columnSpin.setRange(1, 10000)
-    columnSpin.setValue(p.GetInt("ColumnNumber", 1))
-
-    loGrid = QtGui.QHBoxLayout()
-    loGrid.addWidget(rLoGrid)
-    loGrid.addStretch()
-    loGrid.addWidget(columnSpin)
-
-    loLayout.insertLayout(1, loGrid)
-
-    loType = p.GetString("Layout")
-    if loType == "Grid":
-        rLoGrid.setChecked(True)
-    else:
-        rLoFlow.setChecked(True)
-
-    def onGrpBoxLayout(checked):
-        """Set the layout type."""
-        if checked:
-            for i in grpBoxLayout.findChildren(QtGui.QRadioButton):
-                if i.isChecked():
-                    p.SetString("Layout", i.objectName())
-
-            cpg.setLayout()
-            cpg.onWorkbench()
-
-    rLoFlow.toggled.connect(onGrpBoxLayout)
-    rLoGrid.toggled.connect(onGrpBoxLayout)
-
-    def onColumnSpin(n):
-        """Set number of columns."""
-        p.SetInt("ColumnNumber", n)
-        cpg.onWorkbench()
-
-    columnSpin.valueChanged.connect(onColumnSpin)
-
-
-    ckbBtnWidth = QtGui.QCheckBox()
-    ckbBtnWidth.setText("Button width")
-    btnWidthSpin = QtGui.QSpinBox()
-    btnWidthSpin.setEnabled(False)
-    btnWidthSpin.setRange(0, 10000)
-    btnWidthSpin.setValue(p.GetInt("ButtonWidth", 30))
-
-    loBtnWidth = QtGui.QHBoxLayout()
-    loBtnWidth.addWidget(ckbBtnWidth)
-    loBtnWidth.addStretch()
-    loBtnWidth.addWidget(btnWidthSpin)
-
-    loLayout.insertLayout(2, loBtnWidth)
-
-    if p.GetBool("EnableButtonWidth", 0):
-        ckbBtnWidth.setChecked(True)
-        btnWidthSpin.setEnabled(True)
-
-    def onCkbBtnWidth(checked):
+    def onCkBoxBtnWidth(checked):
         """Enable button width size setting."""
         if checked:
             p.SetBool("EnableButtonWidth", 1)
@@ -983,7 +1021,7 @@ def settings(stack, btnSettingsDone):
 
         cpg.onWorkbench()
 
-    ckbBtnWidth.stateChanged.connect(onCkbBtnWidth)
+    ckBoxBtnWidth.stateChanged.connect(onCkBoxBtnWidth)
 
     def onButtonWidth(n):
         """Set button width size."""
@@ -992,14 +1030,60 @@ def settings(stack, btnSettingsDone):
 
     btnWidthSpin.valueChanged.connect(onButtonWidth)
 
+    def onCkBoxBtnHeight(checked):
+        """Enable button height size setting."""
+        if checked:
+            p.SetBool("EnableButtonHeight", 1)
+            btnHeightSpin.setEnabled(True)
+            p.SetInt("ButtonHeight", btnHeightSpin.value())
+        else:
+            p.SetBool("EnableButtonHeight", 0)
+            btnHeightSpin.setEnabled(False)
+
+        cpg.onWorkbench()
+
+    ckBoxBtnHeight.stateChanged.connect(onCkBoxBtnHeight)
+
+    def onButtonHeight(n):
+        """Set button height size."""
+        p.SetInt("ButtonHeight", n)
+        cpg.onWorkbench()
+
+    btnHeightSpin.valueChanged.connect(onButtonHeight)
+
+    def onCkBoxBtnSpacing(checked):
+        """Enable buttons spacing setting."""
+        if checked:
+            p.SetBool("EnableButtonSpacing", 1)
+            btnSpacingSpin.setEnabled(True)
+            p.SetInt("ButtonSpacing", btnSpacingSpin.value())
+        else:
+            p.SetBool("EnableButtonSpacing", 0)
+            p.RemInt("ButtonSpacing")
+            btnSpacingSpin.setEnabled(False)
+            btnSpacingSpin.blockSignals(True)
+            btnSpacingSpin.setValue(5)
+            btnSpacingSpin.blockSignals(False)
+
+        cpg.onWorkbench()
+
+    ckBoxBtnSpacing.stateChanged.connect(onCkBoxBtnSpacing)
+
+    def onButtonSpacing(n):
+        """Set buttons spacing value."""
+        p.SetInt("ButtonSpacing", n)
+        cpg.onWorkbench()
+
+    btnSpacingSpin.valueChanged.connect(onButtonSpacing)
+
     loBtnSettings = QtGui.QHBoxLayout()
     loBtnSettings.addStretch()
     loBtnSettings.addWidget(btnSettingsDone)
 
     # Layout
+    layout.addWidget(grpBoxLayout)
     layout.addWidget(grpBoxStyle)
     layout.addWidget(grpBoxSize)
-    layout.addWidget(grpBoxLayout)
     layout.addStretch()
     layoutMain.insertLayout(1, loBtnSettings)
 

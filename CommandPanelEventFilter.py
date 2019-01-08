@@ -5,6 +5,7 @@
 
 """Command panel for FreeCAD - EventFilter."""
 
+
 from PySide import QtGui
 from PySide import QtCore
 

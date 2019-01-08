@@ -4,6 +4,10 @@ Workbench aware and customizable command panel for FreeCAD.
 ![command_panel](https://user-images.githubusercontent.com/4140247/31416873-116d3ea2-adfa-11e7-9486-7e54d66fb750.png)
 
 ### Installation
+Since FreeCAD v0.16+ CommandPanel can be installed via the FreeCAD [Addon Manager](https://github.com/FreeCAD/FreeCAD-addons#1-builtin-addon-manager). 
+
+#### Manual installation:
+
 Install path for FreeCAD modules depends on the operating system used.
 
 ##### Examples:

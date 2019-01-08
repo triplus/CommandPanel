@@ -23,15 +23,15 @@
 from PySide import QtGui
 from PySide import QtCore
 import FreeCADGui as Gui
-import FreeCAD as App
+import CommandPanelCommon as cpc
 import CommandPanelCommands as cpcmd
 import CommandPanelPreferences as cpp
 import CommandPanelFlowLayout as flow
 
 
+p = cpc.p
 layout = None
 mw = Gui.getMainWindow()
-p = App.ParamGet("User parameter:BaseApp/CommandPanel")
 
 widget = QtGui.QWidget()
 widget.setContentsMargins(0, 0, 0, 0)
@@ -140,10 +140,13 @@ def onWorkbench():
                 x += 1
             layout.addWidget(btn, x, y)
             y += 1
+        # Set spacing
+        layout.setSpacing(p.GetInt("ButtonSpacing", 5))
     else:
         for btn in buttons:
             layout.addWidget(btn)
-
+        # Set spacing
+        layout.setSpaceXY()
 
 
 def onInvoke():

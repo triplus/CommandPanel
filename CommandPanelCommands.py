@@ -1,6 +1,6 @@
 # Command panel for FreeCAD
 # Copyright (C) 2015, 2016 (as part of TabBar) triplus @ FreeCAD
-# Copyright (C) 2017, 2018 triplus @ FreeCAD
+# Copyright (C) 2017, 2018, 2019 triplus @ FreeCAD
 #
 #
 # This library is free software; you can redistribute it and/or
@@ -19,23 +19,23 @@
 
 """Command panel for FreeCAD - Commands."""
 
+
 import os
 from PySide import QtGui
 from PySide import QtCore
 import FreeCADGui as Gui
-import FreeCAD as App
 import CommandPanelGui as cpg
 import CommandPanelCommon as cpc
 import CommandPanelEventFilter as cpef
 
-currentMenu = None
 
+p = cpc.p
 menuList = []
 buttonList = []
+currentMenu = None
 mw = Gui.getMainWindow()
 mapperShow = QtCore.QSignalMapper()
 mapperExpandCollapse = QtCore.QSignalMapper()
-p = App.ParamGet("User parameter:BaseApp/CommandPanel")
 path = os.path.dirname(__file__) + "/Resources/icons/"
 
 
@@ -73,6 +73,9 @@ def buttonFactory():
 
     if p.GetBool("EnableButtonWidth", 0):
         btn.setFixedWidth(p.GetInt("ButtonWidth", 30))
+
+    if p.GetBool("EnableButtonHeight", 0):
+        btn.setFixedHeight(p.GetInt("ButtonHeight", 30))
 
     if p.GetBool("EnableFontSize", 0):
         font = btn.font()
