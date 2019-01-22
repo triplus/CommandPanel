@@ -46,8 +46,10 @@ scroll.setWidget(widget)
 dock = QtGui.QDockWidget()
 dock.setWindowTitle("Commands")
 dock.setObjectName("CommandPanel")
-dock.setWidget(scroll)
-mw.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+
+invokeMenu = QtGui.QMenu()
+invokeMenu.hide()
+widgetAction = QtGui.QWidgetAction(invokeMenu)
 
 # Layouts
 layoutGlobal = QtGui.QVBoxLayout()
@@ -78,6 +80,24 @@ def setLayout():
         layoutStretch.setEnabled(False)
         layoutFlow.setEnabled(True)
         layout = layoutFlow
+
+
+def setContainer():
+    """Use dock or menu as a container."""
+    if p.GetBool("Menu", 0):
+        mw.removeDockWidget(dock)
+        dock.toggleViewAction().setVisible(False)
+        widgetAction.setDefaultWidget(scroll)
+        invokeMenu.addAction(widgetAction)
+        scroll.setFrameShape(QtGui.QFrame.NoFrame)
+    else:
+        dock.setWidget(scroll)
+        mw.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        dock.toggleViewAction().setVisible(True)
+        scroll.setMinimumSize(QtCore.QSize(0, 0))
+        scroll.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        scroll.setFrameShape(QtGui.QFrame.StyledPanel)
+        dock.show()
 
 
 def accessoriesMenu():
@@ -147,18 +167,24 @@ def onWorkbench():
             layout.addWidget(btn)
         # Set spacing
         layout.setSpaceXY()
+        layout.update()
 
 
 def onInvoke():
     """Hide or show command panel at mouse position."""
-    if dock.isVisible():
-        dock.toggleViewAction().trigger()
-    else:
-        dock.setFloating(True)
+    enabled = p.GetBool("Menu", 0)
+    if enabled and invokeMenu.isVisible():
+        invokeMenu.hide()
+    elif enabled:
         pos = QtGui.QCursor.pos()
-        dock.move(pos.x() - dock.size().width() / 2,
-                  pos.y() - dock.size().height() / 2)
-        dock.setVisible(True)
+        invokeMenu.setFixedWidth(p.GetInt("MenuWidth", 300))
+        invokeMenu.setFixedHeight(p.GetInt("MenuHeight", 300))
+        scroll.setFixedWidth(p.GetInt("MenuWidth", 300))
+        scroll.setFixedHeight(p.GetInt("MenuHeight", 300))
+        invokeMenu.popup(QtCore.QPoint(pos.x() - invokeMenu.width() / 2,
+                                       pos.y() - invokeMenu.height() / 2))
+    else:
+        pass
 
 
 def onStart():
@@ -183,6 +209,7 @@ def onStart():
         a.triggered.connect(onInvoke)
 
 
+setContainer()
 setLayout()
 
 

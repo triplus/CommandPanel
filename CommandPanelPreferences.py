@@ -770,7 +770,6 @@ def settings(stack, btnSettingsDone):
     loLayout.addWidget(rLoFlow)
 
     columnSpin = QtGui.QSpinBox()
-    columnSpin.setEnabled(False)
     columnSpin.setRange(1, 10000)
     columnSpin.setValue(p.GetInt("ColumnNumber", 1))
 
@@ -784,7 +783,6 @@ def settings(stack, btnSettingsDone):
     loType = p.GetString("Layout")
     if loType == "Grid":
         rLoGrid.setChecked(True)
-        columnSpin.setEnabled(True)
     else:
         rLoFlow.setChecked(True)
 
@@ -794,10 +792,6 @@ def settings(stack, btnSettingsDone):
             for i in grpBoxLayout.findChildren(QtGui.QRadioButton):
                 if i.isChecked():
                     p.SetString("Layout", i.objectName())
-                    if i.objectName() == "Grid":
-                        columnSpin.setEnabled(True)
-                    else:
-                        columnSpin.setEnabled(False)
 
             cpg.setLayout()
             cpg.onWorkbench()
@@ -1059,11 +1053,7 @@ def settings(stack, btnSettingsDone):
             p.SetInt("ButtonSpacing", btnSpacingSpin.value())
         else:
             p.SetBool("EnableButtonSpacing", 0)
-            p.RemInt("ButtonSpacing")
             btnSpacingSpin.setEnabled(False)
-            btnSpacingSpin.blockSignals(True)
-            btnSpacingSpin.setValue(5)
-            btnSpacingSpin.blockSignals(False)
 
         cpg.onWorkbench()
 
@@ -1076,6 +1066,96 @@ def settings(stack, btnSettingsDone):
 
     btnSpacingSpin.valueChanged.connect(onButtonSpacing)
 
+    # Invokable menu
+    grpBoxMenu = QtGui.QGroupBox("Menu:")
+    loInvokeMenu = QtGui.QVBoxLayout()
+    grpBoxMenu.setLayout(loInvokeMenu)
+
+    loMenuEnable = QtGui.QHBoxLayout()
+    lblMenuEnable = QtGui.QLabel("Enable")
+    ckBoxMenuEnable = QtGui.QCheckBox()
+    ckBoxMenuEnable.setToolTip("Enable invokable menu")
+
+    loMenuEnable.addWidget(lblMenuEnable)
+    loMenuEnable.addStretch()
+    loMenuEnable.addWidget(ckBoxMenuEnable)
+
+    lblShortcut = QtGui.QLabel()
+    lblShortcut.setText("Shortcut")
+    lblShortcutKey = QtGui.QLabel()
+
+    a = mw.findChild(QtGui.QAction, "InvokeCommandPanel")
+    if a:
+        lblShortcutKey.setText(a.shortcut().toString())
+    else:
+        lblShortcutKey.setText("Not set.")
+
+    loShortcut = QtGui.QHBoxLayout()
+    loShortcut.addWidget(lblShortcut)
+    loShortcut.addStretch()
+    loShortcut.addWidget(lblShortcutKey)
+
+    lblMenuWidth = QtGui.QLabel()
+    lblMenuWidth.setText("Menu width")
+    menuWidthSpin = QtGui.QSpinBox()
+    menuWidthSpin.setEnabled(False)
+    menuWidthSpin.setRange(1, 10000)
+    menuWidthSpin.setValue(p.GetInt("MenuWidth", 300))
+
+    loMenuWidth = QtGui.QHBoxLayout()
+    loMenuWidth.addWidget(lblMenuWidth)
+    loMenuWidth.addStretch()
+    loMenuWidth.addWidget(menuWidthSpin)
+
+    lblMenuHeight = QtGui.QLabel()
+    lblMenuHeight.setText("Menu height")
+    menuHeightSpin = QtGui.QSpinBox()
+    menuHeightSpin.setEnabled(False)
+    menuHeightSpin.setRange(1, 10000)
+    menuHeightSpin.setValue(p.GetInt("MenuHeight", 300))
+
+    loMenuHeight = QtGui.QHBoxLayout()
+    loMenuHeight.addWidget(lblMenuHeight)
+    loMenuHeight.addStretch()
+    loMenuHeight.addWidget(menuHeightSpin)
+
+    if p.GetBool("Menu", 0):
+        ckBoxMenuEnable.setChecked(True)
+        menuWidthSpin.setEnabled(True)
+        menuHeightSpin.setEnabled(True)
+
+    def onCkBoxMenuEnable(checked):
+        """Set invokable menu mode."""
+        if checked:
+            p.SetBool("Menu", 1)
+            menuWidthSpin.setEnabled(True)
+            menuHeightSpin.setEnabled(True)
+        else:
+            p.SetBool("Menu", 0)
+            menuWidthSpin.setEnabled(False)
+            menuHeightSpin.setEnabled(False)
+
+        cpg.setContainer()
+
+    ckBoxMenuEnable.stateChanged.connect(onCkBoxMenuEnable)
+
+    def onMenuWidth(n):
+        """Set the menu width."""
+        p.SetInt("MenuWidth", n)
+
+    menuWidthSpin.valueChanged.connect(onMenuWidth)
+
+    def onMenuHeight(n):
+        """Set the menu height."""
+        p.SetInt("MenuHeight", n)
+
+    menuHeightSpin.valueChanged.connect(onMenuHeight)
+
+    loInvokeMenu.insertLayout(0, loMenuEnable)
+    loInvokeMenu.insertLayout(1, loShortcut)
+    loInvokeMenu.insertLayout(2, loMenuWidth)
+    loInvokeMenu.insertLayout(3, loMenuHeight)
+
     loBtnSettings = QtGui.QHBoxLayout()
     loBtnSettings.addStretch()
     loBtnSettings.addWidget(btnSettingsDone)
@@ -1084,6 +1164,7 @@ def settings(stack, btnSettingsDone):
     layout.addWidget(grpBoxLayout)
     layout.addWidget(grpBoxStyle)
     layout.addWidget(grpBoxSize)
+    layout.addWidget(grpBoxMenu)
     layout.addStretch()
     layoutMain.insertLayout(1, loBtnSettings)
 

@@ -127,6 +127,7 @@ def workbenchButtons(workbench):
                 a.setIcon(QtGui.QIcon(path + "CommandPanelCollapse.svg"))
                 a.setToolTip("Collapse menu")
                 btn.setDefaultAction(a)
+                btn.setObjectName("Collapse")
                 mapperExpandCollapse.setMapping(btn, data)
                 btn.clicked.connect(mapperExpandCollapse.map)
             elif cmd == "CP_Separator":
@@ -162,11 +163,15 @@ def workbenchButtons(workbench):
                                " is currently not available")
                 btn.setIcon(QtGui.QIcon(":/icons/freecad"))
 
-            if p.GetString("Layout") == "Grid" and btn.objectName() == "CP_Spacer":
+            if (p.GetString("Layout") == "Grid" and
+                    btn.objectName() == "CP_Spacer"):
                 pass
             else:
                 buttonList.append(btn)
-
+    if p.GetBool("Menu", 0):
+        for b in buttonList:
+            if b.objectName() != "Collapse":
+                b.clicked.connect(cpg.onInvoke)
     for m in menuList:
         m.triggered.connect(onMenuTriggered)
 
