@@ -22,6 +22,7 @@
 
 from PySide import QtGui
 from PySide import QtCore
+import FreeCAD as App
 import FreeCADGui as Gui
 import CommandPanelCommon as cpc
 import CommandPanelCommands as cpcmd
@@ -209,10 +210,19 @@ def onStart():
         a.triggered.connect(onInvoke)
 
 
+def onPreStart():
+    """Improve start reliability and maintain FreeCAD 0.16 support."""
+    if App.Version()[1] < "17":
+        onStart()
+    else:
+        if mw.property("eventLoop"):
+            onStart()
+
+
 setContainer()
 setLayout()
 
 
 t = QtCore.QTimer()
-t.timeout.connect(onStart)
+t.timeout.connect(onPreStart)
 t.start(500)
