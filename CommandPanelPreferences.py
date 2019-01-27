@@ -52,7 +52,7 @@ def createWidgets():
 
 
 def baseGroup():
-    """Current group."""
+    """Current workbench base group."""
     wb = cBoxWb.itemData(cBoxWb.currentIndex(), QtCore.Qt.UserRole)
     g = p.GetGroup("User").GetGroup(wb)
     return g
@@ -63,11 +63,12 @@ def saveEnabled():
     items = []
     for index in range(enabled.count()):
         items.append(enabled.item(index).data(QtCore.Qt.UserRole))
-    uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
-    g = cpc.findGroup(baseGroup(), uid)
-    if g:
-        g.SetString("commands", ",".join(items))
-    cpg.onWorkbench()
+    domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+    if domain:
+        g = cpc.findGroup(domain)
+        if g:
+            g.SetString("commands", ",".join(items))
+            cpg.onWorkbench()
 
 
 def dialog():
@@ -154,7 +155,7 @@ def general(dia, stack, btnClose, btnSettings):
 
     # Checkbox default menu
     ckDefault = QtGui.QCheckBox()
-    ckDefault.setToolTip("Set default workbench menu")
+    ckDefault.setToolTip("Set menu as default workbench menu")
 
     # Button add workbench menu
     btnAddWbMenu = QtGui.QPushButton()
@@ -163,7 +164,7 @@ def general(dia, stack, btnClose, btnSettings):
 
     # Button remove workbench menu
     btnRemoveWbMenu = QtGui.QPushButton()
-    btnRemoveWbMenu.setToolTip("Remove currently selected workbench menu")
+    btnRemoveWbMenu.setToolTip("Remove selected workbench menu")
     btnRemoveWbMenu.setIcon(QtGui.QIcon(path + "CommandPanelRemove.svg"))
 
     # Button add command
@@ -315,8 +316,9 @@ def general(dia, stack, btnClose, btnSettings):
         cpc.defaultGroup(base)
         populateCommands()
         populateCBoxMenu()
-        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
-        populateEnabled(cpc.findGroup(base, uid))
+        domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        if domain:
+            populateEnabled(cpc.findGroup(domain))
         btnClose.setFocus()
 
     cBoxWb.currentIndexChanged.connect(onCBoxWb)
@@ -324,30 +326,24 @@ def general(dia, stack, btnClose, btnSettings):
     def populateCBoxMenu():
         """Workbench menu combo box."""
         base = baseGroup()
-        index = base.GetString("index")
-        if index:
-            index = index.split(",")
-        else:
-            index = []
+        index = cpc.splitIndex(base)
+        ckDefault.blockSignals(True)
         cBoxMenu.blockSignals(True)
         cBoxMenu.clear()
         for i in index:
             name = base.GetGroup(i).GetString("name")
             uid = base.GetGroup(i).GetString("uuid")
+            wb = cBoxWb.itemData(cBoxWb.currentIndex(), QtCore.Qt.UserRole)
+            domain = "CPMenu" + "." + "User" + "." + wb + "." + uid
             try:
-                cBoxMenu.insertItem(0, name.decode("UTF-8"), uid)
+                cBoxMenu.insertItem(0, name.decode("UTF-8"), domain)
             except AttributeError:
-                cBoxMenu.insertItem(0, name, uid)
-        ckDefault.blockSignals(True)
-        if base.GetBool("default", 0):
-            default = base.GetString("default")
-            data = cBoxMenu.findData(default)
-            cBoxMenu.setCurrentIndex(data)
-            if isDefaultMenu():
-                ckDefault.setChecked(True)
-            else:
-                cBoxMenu.setCurrentIndex(0)
-                ckDefault.setChecked(False)
+                cBoxMenu.insertItem(0, name, domain)
+        default = base.GetString("default")
+        data = cBoxMenu.findData(default)
+        cBoxMenu.setCurrentIndex(data)
+        if isDefaultMenu():
+            ckDefault.setChecked(True)
         else:
             cBoxMenu.setCurrentIndex(0)
             ckDefault.setChecked(False)
@@ -356,15 +352,15 @@ def general(dia, stack, btnClose, btnSettings):
 
     def onCBoxMenu():
         """Load workbench menu data."""
-        base = baseGroup()
-        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+
         ckDefault.blockSignals(True)
         if isDefaultMenu():
             ckDefault.setChecked(True)
         else:
             ckDefault.setChecked(False)
         ckDefault.blockSignals(False)
-        populateEnabled(cpc.findGroup(base, uid))
+        populateEnabled(cpc.findGroup(domain))
         btnClose.setFocus()
 
     cBoxMenu.currentIndexChanged.connect(onCBoxMenu)
@@ -375,8 +371,9 @@ def general(dia, stack, btnClose, btnSettings):
         base.Clear()
         cpc.defaultGroup(base)
         populateCBoxMenu()
-        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
-        populateEnabled(cpc.findGroup(base, uid))
+        domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        if domain:
+            populateEnabled(cpc.findGroup(domain))
         btnClose.setFocus()
 
     btnResetWb.clicked.connect(onBtnResetWb)
@@ -390,18 +387,20 @@ def general(dia, stack, btnClose, btnSettings):
                                               "New menu",
                                               "Please insert menu name.")
         if ok:
-            base = baseGroup()
-            g = cpc.newGroup(base)
-            try:
-                g.SetString("name", text.encode("UTF-8"))
-            except TypeError:
-                g.SetString("name", text)
-            populateCBoxMenu()
-            cBoxMenu.setCurrentIndex(cBoxMenu.findData(g.GetString("uuid")))
-            d.deleteLater()
-            populateEnabled(g)
-        else:
-            d.deleteLater()
+            wb = cBoxWb.itemData(cBoxWb.currentIndex())
+            domain = "CPMenu" + "." + "User" + "." + wb
+            g = cpc.newGroup(domain)
+            if g:
+                uid = g.GetString("uuid")
+                domain = domain + "." + uid
+                try:
+                    g.SetString("name", text.encode("UTF-8"))
+                except TypeError:
+                    g.SetString("name", text)
+                populateCBoxMenu()
+                cBoxMenu.setCurrentIndex(cBoxMenu.findData(domain))
+                populateEnabled(g)
+        d.deleteLater()
         btnClose.setFocus()
 
     btnAddWbMenu.clicked.connect(onBtnAddWbMenu)
@@ -409,12 +408,13 @@ def general(dia, stack, btnClose, btnSettings):
     def onBtnRemoveWbMenu():
         """Remove selected workbench menu."""
         base = baseGroup()
-        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
-        cpc.deleteGroup(base, uid)
+        domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        if domain:
+            cpc.deleteGroup(domain)
         cpc.defaultGroup(base)
         populateCBoxMenu()
-        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
-        populateEnabled(cpc.findGroup(base, uid))
+        domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        populateEnabled(cpc.findGroup(domain))
         btnClose.setFocus()
 
     btnRemoveWbMenu.clicked.connect(onBtnRemoveWbMenu)
@@ -422,10 +422,9 @@ def general(dia, stack, btnClose, btnSettings):
     def onCKDefault(checked):
         """Set the checkbox state."""
         base = baseGroup()
-        base.SetBool("default", 1)
-        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
         if checked:
-            base.SetString("default", uid)
+            base.SetString("default", domain)
         else:
             base.RemString("default")
         cpg.onWorkbench()
@@ -434,17 +433,19 @@ def general(dia, stack, btnClose, btnSettings):
 
     def isDefaultMenu():
         """Check if current menu is the default menu."""
-        d = False
+        default = False
         base = baseGroup()
-        uid = cBoxMenu.itemData(cBoxMenu.currentIndex())
-        if base.GetBool("default", 0):
-            if base.GetString("default") == uid:
-                d = True
-        return d
+        domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+        if domain and base.GetString("default") == domain:
+            default = True
+        return default
 
     def populateEnabled(group):
         """Populate enabled commands panel."""
-        items = group.GetString("commands")
+        if group:
+            items = group.GetString("commands")
+        else:
+            items = []
         if items:
             items = items.split(",")
         else:
@@ -454,20 +455,17 @@ def general(dia, stack, btnClose, btnSettings):
         enabled.clear()
         for i in items:
             item = QtGui.QListWidgetItem(enabled)
-            if i == "CP_Separator":
+            if i == "CPSeparator":
                 item.setText("Separator")
                 item.setData(QtCore.Qt.UserRole, i)
                 item.setIcon(QtGui.QIcon(path +
                                          "CommandPanelAddSeparator.svg"))
-            elif i == "CP_Spacer":
+            elif i == "CPSpacer":
                 item.setText("Spacer")
                 item.setData(QtCore.Qt.UserRole, i)
                 item.setIcon(QtGui.QIcon(path + "CommandPanelAddSpacer.svg"))
-            elif i.startswith("CP_Menu"):
-                try:
-                    g = cpc.findGroup(baseGroup(), i.split("CP_Menu_", 1)[1])
-                except IndexError:
-                    g = None
+            elif i.startswith("CPMenu"):
+                g = cpc.findGroup(i)
                 if g:
                     try:
                         text = g.GetString("name").decode("UTF-8")
@@ -559,7 +557,7 @@ def general(dia, stack, btnClose, btnSettings):
         enabled.insertItem(row + 1, item)
         enabled.setCurrentRow(row + 1)
         item.setText("Separator")
-        item.setData(QtCore.Qt.UserRole, "CP_Separator")
+        item.setData(QtCore.Qt.UserRole, "CPSeparator")
         item.setIcon(QtGui.QIcon(path + "CommandPanelAddSeparator.svg"))
         saveEnabled()
 
@@ -572,7 +570,7 @@ def general(dia, stack, btnClose, btnSettings):
         enabled.insertItem(row + 1, item)
         enabled.setCurrentRow(row + 1)
         item.setText("Spacer")
-        item.setData(QtCore.Qt.UserRole, "CP_Spacer")
+        item.setData(QtCore.Qt.UserRole, "CPSpacer")
         item.setIcon(QtGui.QIcon(path + "CommandPanelAddSpacer.svg"))
         saveEnabled()
 
@@ -585,7 +583,7 @@ def general(dia, stack, btnClose, btnSettings):
         enabled.insertItem(row + 1, item)
         enabled.setCurrentRow(row + 1)
         item.setText("Menu")
-        item.setData(QtCore.Qt.UserRole, "CP_Menu")
+        item.setData(QtCore.Qt.UserRole, "CPMenu")
         item.setIcon(QtGui.QIcon(path + "CommandPanelAddMenu.svg"))
         saveEnabled()
         onSelectionChanged()
@@ -597,7 +595,7 @@ def general(dia, stack, btnClose, btnSettings):
         current = enabled.currentItem()
         if current:
             data = current.data(QtCore.Qt.UserRole)
-        if current and data and data.startswith("CP_Menu"):
+        if current and data and data.startswith("CPMenu"):
             btnEditMenu.setEnabled(True)
             btnEditMenu.setFocus()
         else:
@@ -606,9 +604,9 @@ def general(dia, stack, btnClose, btnSettings):
     enabled.itemSelectionChanged.connect(onSelectionChanged)
 
     def onEditMenu():
-        """Open menu selection dialog."""
+        """Open edit dialog for selected menu ."""
         current = enabled.currentItem()
-        if current and current.data(QtCore.Qt.UserRole).startswith("CP_Menu"):
+        if current and current.data(QtCore.Qt.UserRole).startswith("CPMenu"):
             stack.setCurrentIndex(1)
 
     btnEditMenu.clicked.connect(onEditMenu)
@@ -618,9 +616,9 @@ def general(dia, stack, btnClose, btnSettings):
         """Stack widget index change."""
         if n == 0:
             row = enabled.currentRow()
-            index = cBoxMenu.currentIndex()
-            populateEnabled(cpc.findGroup(baseGroup(),
-                                          cBoxMenu.itemData(index)))
+            domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+            if domain:
+                populateEnabled(cpc.findGroup(domain))
             enabled.setCurrentRow(row)
             btnClose.setDefault(True)
         onSelectionChanged()
@@ -636,8 +634,7 @@ def general(dia, stack, btnClose, btnSettings):
     # Available commands
     populateCommands()
     # Enabled commands
-    populateEnabled(cpc.findGroup(baseGroup(),
-                                  cBoxMenu.itemData(cBoxMenu.currentIndex())))
+    populateEnabled(cpc.findGroup(cBoxMenu.itemData(cBoxMenu.currentIndex())))
 
     return w
 
@@ -645,100 +642,177 @@ def general(dia, stack, btnClose, btnSettings):
 def edit(stack):
     """Preferences for editable commands."""
 
+    items = []
+
     # Widgets
-    w = QtGui.QWidget()
-    lo = QtGui.QVBoxLayout()
-    w.setLayout(lo)
     widget = QtGui.QWidget()
     layout = QtGui.QVBoxLayout()
     widget.setLayout(layout)
-    scroll = QtGui.QScrollArea()
-    scroll.setWidgetResizable(True)
-    scroll.setWidget(widget)
-    lo.addWidget(scroll)
+
+    tree = QtGui.QTreeWidget()
+    tree.setHeaderLabel("Set menu: None")
 
     # Button edit done
     btnEditDone = QtGui.QPushButton()
     btnEditDone.setText("Done")
+    btnEditDone.setToolTip("Return to general preferences")
 
-    # Group box for menus
-    grpBoxMenu = QtGui.QGroupBox("Menu:")
-    loMenu = QtGui.QVBoxLayout()
-    grpBoxMenu.setLayout(loMenu)
+    # Layout button edit done
+    loBtnEditDone = QtGui.QHBoxLayout()
+    loBtnEditDone.addStretch()
+    loBtnEditDone.addWidget(btnEditDone)
 
-    # Layout
-    loEditDone = QtGui.QHBoxLayout()
-    loEditDone.addStretch()
-    loEditDone.addWidget(btnEditDone)
-
-    layout.addWidget(grpBoxMenu)
-    layout.addStretch()
-    lo.insertLayout(1, loEditDone)
+    layout.addWidget(tree)
+    layout.insertLayout(1, loBtnEditDone)
 
     # Functions and connections
 
+    def updateTree():
+        """Update tree widget and add available menus."""
+        tree.blockSignals = True
+        wb = Gui.listWorkbenches()
+        currentWb = cBoxWb.itemData(cBoxWb.currentIndex())
+
+        wbSort = list(wb)
+        wbSort.sort()
+        if currentWb in wbSort:
+            wbSort.remove(currentWb)
+
+        def treeItems(currentWb=None,
+                      mt=None,
+                      cn=None,
+                      expanded=False,
+                      itemTop=None):
+            """Create tree widget items."""
+            if currentWb:
+                try:
+                    icon = cpc.wbIcon(wb[currentWb].Icon)
+                except AttributeError:
+                    icon = QtGui.QIcon(":/icons/freecad")
+            else:
+                icon = QtGui.QIcon(":/icons/freecad")
+
+            if not mt:
+                mt = wb[currentWb].MenuText
+            if not cn:
+                cn = wb[currentWb].__class__.__name__
+
+            if itemTop:
+                item = QtGui.QTreeWidgetItem(itemTop)
+            else:
+                item = QtGui.QTreeWidgetItem(tree)
+
+            item.setIcon(0, icon)
+
+            try:
+                item.setText(0, mt.decode("UTF-8"))
+            except AttributeError:
+                item.setText(0, mt)
+
+            item.setExpanded(expanded)
+
+            source = ["User", "System"]
+            for s in source:
+                itemSource = QtGui.QTreeWidgetItem(item)
+                itemSource.setText(0, s)
+                itemSource.setExpanded(expanded)
+
+                base = p.GetGroup(s).GetGroup(cn)
+                index = cpc.splitIndex(base)
+                for i in index:
+                    g = base.GetGroup(i)
+                    uid = g.GetString("uuid")
+                    domain = "CPMenu" + "." + s + "." + cn + "." + uid
+                    itemMenu = QtGui.QTreeWidgetItem(itemSource)
+                    name = g.GetString("name")
+                    try:
+                        itemMenu.setText(0, name.decode("UTF-8"))
+                    except AttributeError:
+                        itemMenu.setText(0, name)
+                    itemMenu.setCheckState(0, QtCore.Qt.Unchecked)
+                    itemMenu.setData(0, QtCore.Qt.UserRole, domain)
+                    items.append(itemMenu)
+
+                if itemSource.childCount() == 0:
+                    item.removeChild(itemSource)
+
+        # Current workbench
+        treeItems(currentWb, None, None, True, None)
+
+        # Other workbenches
+        item = QtGui.QTreeWidgetItem(tree)
+        item.setText(0, "Workbenches")
+        for i in wbSort:
+            treeItems(i, None, None, False, item)
+
+        # Remove empty
+        for i in reversed(range(item.childCount())):
+            if item.child(i).childCount() == 0:
+                item.removeChild(item.child(i))
+
+        # Current
+        current = enabled.currentItem()
+        if current and (current.data(QtCore.Qt.UserRole)
+                        .startswith("CPMenu")):
+            data = current.data(QtCore.Qt.UserRole)
+            for i in items:
+                if i.data(0, QtCore.Qt.UserRole) == data:
+                    i.setCheckState(0, QtCore.Qt.Checked)
+                    text = i.text(0)
+                    tree.setHeaderLabel("Set menu: " + text)
+
+                    parent = i.parent()
+                    while parent:
+                        parent.setExpanded(True)
+                        parent = parent.parent()
+
+        tree.blockSignals = False
+
+    def onChecked(item):
+        """Set menu."""
+        tree.blockSignals = True
+        if item.checkState(0) == QtCore.Qt.Checked:
+            for i in items:
+                if i.checkState(0) == QtCore.Qt.Checked and i is not item:
+                    i.setCheckState(0, QtCore.Qt.Unchecked)
+            data = item.data(0, QtCore.Qt.UserRole)
+        else:
+            data = None
+
+        text = item.text(0)
+
+        if data:
+            tree.setHeaderLabel("Set menu: " + text)
+            enabled.currentItem().setData(QtCore.Qt.UserRole,
+                                          item.data(0, QtCore.Qt.UserRole))
+            saveEnabled()
+        else:
+            tree.setHeaderLabel("Set menu: None")
+            enabled.currentItem().setData(QtCore.Qt.UserRole, "CPMenu")
+            saveEnabled()
+        tree.blockSignals = False
+
     def onEditDone():
         """Switch to general preferences."""
+        tree.itemChanged.disconnect(onChecked)
+        del items[:]
+        tree.clear()
+
         stack.setCurrentIndex(0)
 
     btnEditDone.clicked.connect(onEditDone)
-
-    def onGrpBoxMenu():
-        """Set menu on selection."""
-        on = False
-        for i in grpBoxMenu.findChildren(QtGui.QRadioButton):
-            if i.isChecked():
-                on = True
-                enabled.currentItem().setData(QtCore.Qt.UserRole,
-                                              i.objectName())
-        if not on:
-            enabled.currentItem().setData(QtCore.Qt.UserRole, "CP_Menu")
-        saveEnabled()
-
-    def updateMenuList():
-        """Fill group box with available menus."""
-        uid = None
-        current = enabled.currentItem()
-        if current:
-            data = current.data(QtCore.Qt.UserRole)
-        if current and data and data.startswith("CP_Menu_"):
-            try:
-                uid = current.data(QtCore.Qt.UserRole).split("CP_Menu_", 1)[1]
-            except IndexError:
-                pass
-        grpBoxMenu.blockSignals(True)
-        for i in grpBoxMenu.findChildren(QtGui.QRadioButton):
-            i.deleteLater()
-        base = baseGroup()
-        index = base.GetString("index")
-        if index:
-            index = index.split(",")
-        else:
-            index = []
-        for i in index:
-            g = base.GetGroup(i)
-            rb = QtGui.QRadioButton(grpBoxMenu)
-            try:
-                rb.setText(g.GetString("name").decode("UTF-8"))
-            except AttributeError:
-                rb.setText(g.GetString("name"))
-            rb.setObjectName("CP_Menu_" + g.GetString("uuid"))
-            if uid and g.GetString("uuid") == uid:
-                rb.setChecked(True)
-            rb.toggled.connect(onGrpBoxMenu)
-            loMenu.addWidget(rb)
-        grpBoxMenu.blockSignals(False)
 
     def onStack(n):
         """Stack widget index change."""
         if n == 1:
             btnEditDone.setDefault(True)
             btnEditDone.setFocus()
-            updateMenuList()
+            updateTree()
+            tree.itemChanged.connect(onChecked)
 
     stack.currentChanged.connect(onStack)
 
-    return w
+    return widget
 
 
 def settings(stack, btnSettingsDone):

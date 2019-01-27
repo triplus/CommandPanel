@@ -1,6 +1,6 @@
 # Command panel for FreeCAD
 # Copyright (C) 2015, 2016 (as part of TabBar) triplus @ FreeCAD
-# Copyright (C) 2017, 2018 triplus @ FreeCAD
+# Copyright (C) 2017, 2018, 2019 triplus @ FreeCAD
 #
 #
 # This library is free software; you can redistribute it and/or
@@ -48,9 +48,10 @@ dock = QtGui.QDockWidget()
 dock.setWindowTitle("Commands")
 dock.setObjectName("CommandPanel")
 
-invokeMenu = QtGui.QMenu()
+invokeMenu = QtGui.QMenu(mw)
 invokeMenu.hide()
 widgetAction = QtGui.QWidgetAction(invokeMenu)
+
 
 # Layouts
 layoutGlobal = QtGui.QVBoxLayout()

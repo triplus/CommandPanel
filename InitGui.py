@@ -1,6 +1,6 @@
 # Command panel for FreeCAD
 # Copyright (C) 2015, 2016 (as part of TabBar) triplus @ FreeCAD
-# Copyright (C) 2017 triplus @ FreeCAD
+# Copyright (C) 2017, 2018, 2019 triplus @ FreeCAD
 #
 #
 # This library is free software; you can redistribute it and/or

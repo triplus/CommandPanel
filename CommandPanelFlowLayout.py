@@ -133,7 +133,7 @@ class FlowLayout(QtGui.QLayout):
                 y = y + lineHeight + self.spaceXY
                 nextX = x + item.sizeHint().width() + self.spaceXY
                 lineHeight = 0
-            elif wid.objectName() == "CP_Spacer":
+            elif wid.objectName() == "CPSpacer":
                 wid.setFixedSize(0, 0)
                 x = rect.x()
                 y = y + lineHeight + self.spaceXY

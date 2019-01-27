@@ -93,81 +93,101 @@ def buttonFactory():
     return btn
 
 
+def clearList(lst):
+    """Empty list and delete the items."""
+    try:
+        item = lst.pop()
+    except IndexError:
+        item = None
+    while item:
+        item.deleteLater()
+        try:
+            item = lst.pop()
+        except IndexError:
+            item = None
+
+
 def workbenchButtons(workbench):
     """Create workbench buttons from command names."""
     clearList(menuList)
     clearList(buttonList)
 
-    g = None
-    uid = None
+    group = None
+    commands = []
     actions = cpc.actionList()
-    base = p.GetGroup("User").GetGroup(workbench)
-    cpc.defaultGroup(base)
-    if base.GetBool("default", 0):
-        uid = base.GetString("default")
-        g = cpc.findGroup(base, uid)
-    if g:
-        commands = g.GetString("commands")
-        if commands:
-            commands = commands.split(",")
-            commands = menuCommands(base, commands)
-        else:
-            commands = []
-        for cmd in commands:
-            btn = buttonFactory()
-            if cmd.startswith("CP_Collapse_"):
-                a = QtGui.QAction(btn)
-                try:
-                    gUid = cmd.split("CP_Collapse_", 1)[1]
-                except IndexError:
-                    gUid = "No_UID"
-                data = ",".join([workbench, gUid, str(0)])
-                a.setData(data)
-                a.setText("Collapse")
-                a.setIcon(QtGui.QIcon(path + "CommandPanelCollapse.svg"))
-                a.setToolTip("Collapse menu")
-                btn.setDefaultAction(a)
-                btn.setObjectName("Collapse")
-                mapperExpandCollapse.setMapping(btn, data)
-                btn.clicked.connect(mapperExpandCollapse.map)
-            elif cmd == "CP_Separator":
-                btn.setEnabled(False)
-                btn.setObjectName("CP_Separator")
-            elif cmd == "CP_Spacer":
-                btn.setEnabled(False)
-                btn.setObjectName("CP_Spacer")
-            elif cmd == "CP_Menu":
-                menu = QtGui.QMenu()
-                btn.setMenu(menu)
-                btn.setIcon(QtGui.QIcon(":/icons/freecad"))
-                # Themes support
-                btn.setObjectName("qt_toolbutton_menubutton")
-                btn.setPopupMode(QtGui.QToolButton
-                                 .ToolButtonPopupMode.MenuButtonPopup)
-                btn.setToolTip("Empty menu")
-            elif cmd.startswith("CP_Menu_"):
-                menu = menuButton(workbench, base, cmd, btn, actions)
-                btn.setMenu(menu)
-                # Theme support
-                btn.setObjectName("qt_toolbutton_menubutton")
-                btn.setPopupMode(QtGui.QToolButton
-                                 .ToolButtonPopupMode.MenuButtonPopup)
-            elif cmd in actions:
-                btn.setDefaultAction(actions[cmd])
-                if btn.icon().isNull():
-                    btn.setIcon(QtGui.QIcon(":/icons/freecad"))
-            else:
-                btn.setEnabled(False)
-                btn.setToolTip("Command " +
-                               cmd +
-                               " is currently not available")
-                btn.setIcon(QtGui.QIcon(":/icons/freecad"))
 
-            if (p.GetString("Layout") == "Grid" and
-                    btn.objectName() == "CP_Spacer"):
-                pass
-            else:
-                buttonList.append(btn)
+    # User
+    if p.GetGroup("User").GetGroup(workbench).GetString("default"):
+        domain = p.GetGroup("User").GetGroup(workbench).GetString("default")
+    # System
+    elif p.GetGroup("System").GetGroup(workbench).GetString("default"):
+        domain = p.GetGroup("System").GetGroup(workbench).GetString("default")
+    else:
+        domain = None
+
+    if domain:
+        group = cpc.findGroup(domain)
+    if group:
+        commands = cpc.splitIndex(group, "commands")
+        commands = expandedMenuCommands(commands)
+
+    for cmd in commands:
+        btn = buttonFactory()
+        if cmd.startswith("CPCollapse"):
+            domain = cmd.split("CPCollapse", 1)[1]
+            data = ",".join([domain, str(0)])
+            a = QtGui.QAction(btn)
+            a.setData(data)
+            a.setText("Collapse")
+            a.setIcon(QtGui.QIcon(path + "CommandPanelCollapse.svg"))
+            a.setToolTip("Collapse menu")
+            btn.setDefaultAction(a)
+            btn.setObjectName("Collapse")
+            mapperExpandCollapse.setMapping(btn, data)
+            btn.clicked.connect(mapperExpandCollapse.map)
+        elif cmd == "CPSeparator":
+            btn.setEnabled(False)
+            btn.setAutoRaise(True)
+            btn.setObjectName("CPSeparator")
+        elif cmd == "CPSpacer":
+            btn.setEnabled(False)
+            btn.setObjectName("CPSpacer")
+        elif cmd == "CPMenu":
+            menu = QtGui.QMenu(mw)
+            btn.setMenu(menu)
+            btn.setIcon(QtGui.QIcon(":/icons/freecad"))
+            # Theme support
+            btn.setObjectName("qt_toolbutton_menubutton")
+            btn.setPopupMode(QtGui.QToolButton
+                             .ToolButtonPopupMode.MenuButtonPopup)
+            btn.setToolTip("Empty menu")
+        elif cmd.startswith("CPMenu"):
+            menu = menuButton(cmd, btn, actions)
+            btn.setMenu(menu)
+            # Theme support
+            btn.setObjectName("qt_toolbutton_menubutton")
+            btn.setPopupMode(QtGui.QToolButton
+                             .ToolButtonPopupMode.MenuButtonPopup)
+        elif cmd in actions:
+            btn.setDefaultAction(actions[cmd])
+            if btn.icon().isNull():
+                btn.setIcon(QtGui.QIcon(":/icons/freecad"))
+        else:
+            btn.setEnabled(False)
+            btn.setToolTip("Command " +
+                           cmd +
+                           " is currently not available")
+            btn.setIcon(QtGui.QIcon(":/icons/freecad"))
+            btn.setText("Not available")
+        if btn.icon().isNull() and btn.objectName() not in ["CPSeparator",
+                                                            "CPSpacer"]:
+            btn.setIcon(QtGui.QIcon(":/icons/freecad"))
+
+        if (p.GetString("Layout") == "Grid" and
+                btn.objectName() == "CPSpacer"):
+            pass
+        else:
+            buttonList.append(btn)
     if p.GetBool("Menu", 0):
         for b in buttonList:
             if b.objectName() != "Collapse":
@@ -178,33 +198,25 @@ def workbenchButtons(workbench):
     return buttonList
 
 
-def menuButton(workbench, base, cmd, btn, actions):
-    """Create menu for menu button from command names."""
+def menuButton(domain, btn, actions):
+    """Create menu for menu button."""
     menu = QtGui.QMenu(mw)
     menuList.append(menu)
-    try:
-        uid = cmd.split("CP_Menu_", 1)[1]
-    except IndexError:
-        uid = "No_UID"
-    menu.setObjectName(uid)
-    g = cpc.findGroup(base, uid)
-    if g and uid != "No_UID":
-        commands = g.GetString("commands")
-        if commands:
-            commands = commands.split(",")
-        else:
-            commands = []
+    menu.setObjectName(domain)
+    g = cpc.findGroup(domain)
+    if g:
+        commands = cpc.splitIndex(g, "commands")
         for cmd in commands:
-            if cmd.startswith("CP_Menu") or cmd.startswith("CP_Spacer"):
+            if cmd.startswith("CPMenu") or cmd.startswith("CPSpacer"):
                 pass
-            elif cmd == "CP_Separator":
+            elif cmd == "CPSeparator":
                 menu.addSeparator()
             elif cmd in actions:
                 menu.addAction(actions[cmd])
             else:
                 a = QtGui.QAction(menu)
                 a.setEnabled(False)
-                a.setText(cmd)
+                a.setText("Not available")
                 a.setIcon(QtGui.QIcon(":/icons/freecad"))
                 a.setToolTip("Command " + cmd + " is currently not available")
                 menu.addAction(a)
@@ -222,8 +234,7 @@ def menuButton(workbench, base, cmd, btn, actions):
                 menu.setDefaultAction(a)
 
         # Add expand action
-        data = ",".join([workbench, uid, str(1)])
-
+        data = ",".join([domain, str(1)])
         e = QtGui.QAction(menu)
         e.setText("Expand")
         e.setIcon(QtGui.QIcon(path + "CommandPanelExpand.svg"))
@@ -236,50 +247,45 @@ def menuButton(workbench, base, cmd, btn, actions):
         mapperExpandCollapse.setMapping(e, data)
         e.triggered.connect(mapperExpandCollapse.map)
 
-        mapperShow.setMapping(menu, data)
+        mapperShow.setMapping(menu, domain)
         menu.aboutToShow.connect(mapperShow.map)
+
+    if btn.icon().isNull():
+        btn.setIcon(QtGui.QIcon(":/icons/freecad"))
 
     return menu
 
 
-def menuCommands(base, commands):
+def expandedMenuCommands(commands):
     """Add command names for expanded menu."""
     names = []
     for cmd in commands:
-        if cmd.startswith("CP_Menu_"):
-            try:
-                uid = cmd.split("CP_Menu_", 1)[1]
-            except IndexError:
-                uid = "No_UID"
-            g = cpc.findGroup(base, uid)
-            if g and uid != "No_UID":
-                expand = g.GetBool("Expand", 0)
+        if cmd.startswith("CPMenu"):
+            g = cpc.findGroup(cmd)
+            if g:
+                expand = g.GetBool("Expand", False)
             else:
-                expand = 0
+                expand = False
             if expand:
-                gE = g.GetString("commands")
-                if gE:
-                    gE = gE.split(",")
-                else:
-                    gE = []
-                for e in gE:
-                    if e.startswith("CP_Menu"):
+                commandsEx = cpc.splitIndex(g, "commands")
+                for cmdEx in commandsEx:
+                    if cmdEx.startswith("CPMenu"):
                         pass
                     else:
-                        names.append(e)
+                        names.append(cmdEx)
                 # Move spacer after collapse button
                 try:
                     last = names.pop()
                 except IndexError:
                     last = None
-                if last == "CP_Spacer":
-                    names.append("CP_Collapse_" + uid)
+                if last == "CPSpacer":
+                    names.append("CPCollapse" + cmd)
                     names.append(last)
                 elif last:
                     names.append(last)
-                    names.append("CP_Collapse_" + uid)
+                    names.append("CPCollapse" + cmd)
                 else:
-                    names.append("CP_Collapse_" + uid)
+                    names.append("CPCollapse" + cmd)
             else:
                 names.append(cmd)
         else:
@@ -288,78 +294,44 @@ def menuCommands(base, commands):
     return names
 
 
-def clearList(l):
-    """Empty list and delete the items."""
-    try:
-        item = l.pop()
-    except IndexError:
-        item = None
-    while item:
-        item.deleteLater()
-        try:
-            item = l.pop()
-        except IndexError:
-            item = None
-
-
-def onMenuShow(n):
-    """Set current menu name on menu aboutToShow"""
+def onMenuShow(domain):
+    """Set currentMenu domain on menu aboutToShow"""
     global currentMenu
-    currentMenu = n
+    currentMenu = domain
 
 
 def onMenuTriggered(a):
     """Set default menu action on menu triggered."""
-    try:
-        data = currentMenu.split(",")
-    except AttributeError:
-        data = []
-    try:
-        wb = data[0]
-        uid = data[1]
-    except IndexError:
-        wb = None
-        uid = None
-    if wb:
-        base = p.GetGroup("User").GetGroup(wb)
-    else:
-        base = None
-    if base and uid:
-        g = cpc.findGroup(base, uid)
-    else:
-        g = None
-
-    for m in menuList:
-        if m.objectName() == uid:
-            m.setDefaultAction(a)
-            for b in buttonList:
-                if b.menu() == m:
-                    b.setDefaultAction(a)
-            name = a.objectName()
-            if g and name:
-                g.SetString("Default", name)
+    if cpg.scroll.hasFocus():
+        domain = currentMenu
+        group = cpc.findGroup(domain)
+        for menu in menuList:
+            if menu.objectName() == domain:
+                menu.setDefaultAction(a)
+                for btn in buttonList:
+                    if btn.menu() == menu:
+                        btn.setDefaultAction(a)
+                        if btn.icon().isNull():
+                            btn.setIcon(QtGui.QIcon(":/icons/freecad"))
+                name = a.objectName()
+                if group and name:
+                    group.SetString("Default", name)
 
 
 def onMenuExpandCollapse(s):
     """Set expand or collapse menu parameter."""
-    g = None
-    base = None
     try:
         data = s.split(",")
     except AttributeError:
         data = []
     try:
-        wb = data[0]
-        uid = data[1]
-        expand = data[2]
+        domain = data[0]
+        expand = data[1]
     except IndexError:
-        wb = None
-        uid = None
+        domain = None
         expand = None
-    if wb:
-        base = p.GetGroup("User").GetGroup(wb)
-    if base and uid:
-        g = cpc.findGroup(base, uid)
+    if domain:
+        g = cpc.findGroup(domain)
     if g and expand == "1":
         g.SetBool("Expand", 1)
     elif g:

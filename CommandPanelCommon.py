@@ -31,16 +31,24 @@ p = App.ParamGet("User parameter:BaseApp/CommandPanel")
 
 
 def actionList():
-    """Create a dictionary of unique actions."""
+    """Create a dictionary of unique actions. Exclude command names
+       containing . to prevent domain name system clash. Exclude
+       command names containing , to prevent possible join and split
+       related issues. Exclude actions with no text, as that can
+       result in ambiguity, when selecting the command."""
     actions = {}
     duplicates = []
     for i in mw.findChildren(QtGui.QAction):
-        if i.objectName() and i.text():
-            if i.objectName() in actions:
-                if i.objectName() not in duplicates:
-                    duplicates.append(i.objectName())
+        name = i.objectName()
+        if (name and
+                i.text() and
+                "." not in name and
+                "," not in name):
+            if name in actions:
+                if name not in duplicates:
+                    duplicates.append(name)
             else:
-                actions[i.objectName()] = i
+                actions[name] = i
     for d in duplicates:
         del actions[d]
     return actions
@@ -80,55 +88,97 @@ def defaultGroup(base):
                "Std_ViewTop",
                "Std_ViewRight"]
         g.SetString("commands", ",".join(cmd))
-        base.SetBool("default", 1)
-        base.SetString("default", g.GetString("uuid"))
     return g
 
 
-def newGroup(base):
-    """Create new group."""
-    index = base.GetString("index")
+def splitIndex(base, string="index"):
+    """Convenience function to create and return the index."""
+    index = base.GetString(string)
     if index:
         index = index.split(",")
     else:
         index = []
-    x = 1
-    while str(x) in index and x < 1000:
-        x += 1
-    index.append(str(x))
-    base.SetString("index", ",".join(index))
-    g = base.GetGroup(str(x))
-    g.SetString("uuid", str(uuid.uuid4()))
-    return g
+    return index
 
 
-def findGroup(base, uid):
-    """Find group with given uuid."""
+def splitDomain(domain=None):
+    """Split the domain name."""
+    if domain:
+        try:
+            d = domain.split(".")
+        except:
+            d = []
+    else:
+        d = []
+    # CPMenu
+    try:
+        prefix = d[0]
+    except IndexError:
+        prefix = None
+    # Source (User or System)
+    try:
+        source = d[1]
+    except IndexError:
+        source = None
+    # Workbench
+    try:
+        workbench = d[2]
+    except IndexError:
+        workbench = None
+    # UUID
+    try:
+        uid = d[3]
+    except IndexError:
+        uid = str(uuid.uuid4())
+    return [prefix, source, workbench, uid]
+
+
+def findGroup(domain):
+    """Find group matching the domain name."""
     g = None
-    index = base.GetString("index")
-    if index:
-        index = index.split(",")
-    else:
-        index = []
-    if uid:
+    d = splitDomain(domain)
+    if all(d):
+        prefix, source, workbench, uid = d
+        base = p.GetGroup(source).GetGroup(workbench)
+        index = splitIndex(base)
         for i in index:
             if base.GetGroup(i).GetString("uuid") == uid:
                 g = base.GetGroup(i)
     return g
 
 
-def deleteGroup(base, uid):
-    """Delete group with given uuid."""
-    temp = []
-    index = base.GetString("index")
-    if index:
-        index = index.split(",")
-    else:
-        index = []
-    for i in index:
-        if base.GetGroup(i).GetString("uuid") == uid:
-            base.RemGroup(i)
-        else:
-            temp.append(i)
-    base.SetString("index", ",".join(temp))
-    defaultGroup(base)
+def newGroup(domain):
+    """Create a new group."""
+    g = None
+    d = splitDomain(domain)
+    if all(d):
+        prefix, source, workbench, uid = d
+        base = p.GetGroup(source).GetGroup(workbench)
+        index = splitIndex(base)
+        x = 1
+        while str(x) in index and x < 1000:
+            x += 1
+        index.append(str(x))
+        base.SetString("index", ",".join(index))
+        g = base.GetGroup(str(x))
+        g.SetString("uuid", uid)
+    return g
+
+
+def deleteGroup(domain):
+    """Delete group matching the domain name."""
+    d = splitDomain(domain)
+    if all(d):
+        temp = []
+        prefix, source, workbench, uid = d
+        base = p.GetGroup(source).GetGroup(workbench)
+        index = splitIndex(base)
+        for i in index:
+            if base.GetGroup(i).GetString("uuid") == uid:
+                base.RemGroup(i)
+            else:
+                temp.append(i)
+        base.SetString("index", ",".join(temp))
+        defaultGroup(base)
+        return True
+    return False
