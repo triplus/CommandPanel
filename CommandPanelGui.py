@@ -144,7 +144,12 @@ def onPreferences():
 
 def onWorkbench():
     """Populate command panel on workbench activation."""
-    workbench = Gui.activeWorkbench().__class__.__name__
+
+    # Global panel mode
+    if p.GetBool("Global", 0):
+        workbench = "GlobalPanel"
+    else:
+        workbench = Gui.activeWorkbench().__class__.__name__
 
     if layout:
         while not layout.isEmpty():

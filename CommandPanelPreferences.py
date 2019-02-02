@@ -300,6 +300,11 @@ def general(dia, stack, btnClose, btnSettings):
             mt = wb[i].MenuText
             cn = wb[i].__class__.__name__
             cBoxWb.insertItem(0, icon, mt, cn)
+        cBoxWb.insertSeparator(0)
+        cBoxWb.insertItem(0,
+                          QtGui.QIcon(":/icons/freecad"),
+                          "Global panel",
+                          "GlobalPanel")
         activeWb = Gui.activeWorkbench().__class__.__name__
         cBoxWb.setCurrentIndex(cBoxWb.findData(activeWb))
         cBoxWb.blockSignals(False)
@@ -702,7 +707,8 @@ def edit(stack):
             else:
                 item = QtGui.QTreeWidgetItem(tree)
 
-            item.setIcon(0, icon)
+            if cn != "GlobalPanel":
+                item.setIcon(0, icon)
 
             try:
                 item.setText(0, mt.decode("UTF-8"))
@@ -737,7 +743,10 @@ def edit(stack):
                     item.removeChild(itemSource)
 
         # Current workbench
-        treeItems(currentWb, None, None, True, None)
+        if currentWb != "GlobalPanel":
+            treeItems(currentWb, None, None, True, None)
+        else:
+            treeItems(None, "Global", "GlobalPanel", True, None)
 
         # Other workbenches
         item = QtGui.QTreeWidgetItem(tree)
@@ -749,6 +758,10 @@ def edit(stack):
         for i in reversed(range(item.childCount())):
             if item.child(i).childCount() == 0:
                 item.removeChild(item.child(i))
+
+        # Global menus
+        if currentWb != "GlobalPanel":
+            treeItems(None, "Global", "GlobalPanel", False, None)
 
         # Current
         current = enabled.currentItem()
@@ -829,6 +842,36 @@ def settings(stack, btnSettingsDone):
     scroll.setWidgetResizable(True)
     scroll.setWidget(widget)
     layoutMain.addWidget(scroll)
+
+    # Mode
+    grpBoxMode = QtGui.QGroupBox("Mode:")
+    loMode = QtGui.QVBoxLayout()
+    grpBoxMode.setLayout(loMode)
+
+    # Global panel mode
+    loGlobal = QtGui.QHBoxLayout()
+    lblGlobal = QtGui.QLabel("Global panel")
+    ckBoxGlobal = QtGui.QCheckBox()
+    ckBoxGlobal.setToolTip("Enable global panel mode")
+
+    loGlobal.addWidget(lblGlobal)
+    loGlobal.addStretch()
+    loGlobal.addWidget(ckBoxGlobal)
+    loMode.insertLayout(0, loGlobal)
+
+    if p.GetBool("Global", 0):
+        ckBoxGlobal.setChecked(True)
+
+    def onCkBoxGlobal(checked):
+        """Set global panel mode."""
+        if checked:
+            p.SetBool("Global", 1)
+        else:
+            p.SetBool("Global", 0)
+
+        cpg.onWorkbench()
+
+    ckBoxGlobal.stateChanged.connect(onCkBoxGlobal)
 
     # Layout (buttons)
     loLayout = QtGui.QVBoxLayout()
@@ -1235,6 +1278,7 @@ def settings(stack, btnSettingsDone):
     loBtnSettings.addWidget(btnSettingsDone)
 
     # Layout
+    layout.addWidget(grpBoxMode)
     layout.addWidget(grpBoxLayout)
     layout.addWidget(grpBoxStyle)
     layout.addWidget(grpBoxSize)

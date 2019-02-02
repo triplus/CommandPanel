@@ -83,8 +83,7 @@ def defaultGroup(base):
         g = base.GetGroup("1")
         g.SetString("uuid", str(uuid.uuid4()))
         g.SetString("name", "Default")
-        cmd = ["Std_ViewAxo",
-               "Std_ViewFront",
+        cmd = ["Std_ViewFront",
                "Std_ViewTop",
                "Std_ViewRight"]
         g.SetString("commands", ",".join(cmd))
