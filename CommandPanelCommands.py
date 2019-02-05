@@ -173,18 +173,17 @@ def workbenchButtons(workbench):
             if btn.icon().isNull():
                 btn.setIcon(QtGui.QIcon(":/icons/freecad"))
         else:
-            btn.setEnabled(False)
-            btn.setToolTip("Command " +
-                           cmd +
-                           " is currently not available")
-            btn.setIcon(QtGui.QIcon(":/icons/freecad"))
-            btn.setText("Not available")
-        if btn.icon().isNull() and btn.objectName() not in ["CPSeparator",
-                                                            "CPSpacer"]:
+            btn = None
+
+        if (btn and
+                btn.icon().isNull() and
+                btn.objectName() not in ["CPSeparator", "CPSpacer"]):
             btn.setIcon(QtGui.QIcon(":/icons/freecad"))
 
-        if (p.GetString("Layout") == "Grid" and
-                btn.objectName() == "CPSpacer"):
+        if not btn:
+            pass
+        elif (p.GetString("Layout") == "Grid" and
+              btn.objectName() == "CPSpacer"):
             pass
         else:
             buttonList.append(btn)
@@ -214,12 +213,7 @@ def menuButton(domain, btn, actions):
             elif cmd in actions:
                 menu.addAction(actions[cmd])
             else:
-                a = QtGui.QAction(menu)
-                a.setEnabled(False)
-                a.setText("Not available")
-                a.setIcon(QtGui.QIcon(":/icons/freecad"))
-                a.setToolTip("Command " + cmd + " is currently not available")
-                menu.addAction(a)
+                pass
         # Set default action
         try:
             btn.setDefaultAction(menu.actions()[0])
