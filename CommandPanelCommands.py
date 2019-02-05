@@ -50,6 +50,14 @@ class CommandButton(QtGui.QToolButton):
         currentMenu = None
         super(CommandButton, self).mousePressEvent(event)
 
+    def changeEvent(self, event):
+        """Change event."""
+        if event.type() == QtCore.QEvent.EnabledChange:
+            if self.icon().isNull():
+                self.setIcon(QtGui.QIcon(":/icons/freecad"))
+
+        super(CommandButton, self).changeEvent(event)
+
 
 def buttonFactory():
     """Create button and apply the settings."""
