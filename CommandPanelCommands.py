@@ -26,6 +26,7 @@ from PySide import QtCore
 import FreeCADGui as Gui
 import CommandPanelGui as cpg
 import CommandPanelCommon as cpc
+import CommandPanelToolbars as cpt
 import CommandPanelEventFilter as cpef
 
 
@@ -119,7 +120,7 @@ def workbenchButtons(workbench):
     """Create workbench buttons from command names."""
     clearList(menuList)
     clearList(buttonList)
-
+    tb = False
     group = None
     commands = []
     actions = cpc.actionList()
@@ -130,15 +131,19 @@ def workbenchButtons(workbench):
     # System
     elif p.GetGroup("System").GetGroup(workbench).GetString("default"):
         domain = p.GetGroup("System").GetGroup(workbench).GetString("default")
+    # Global default
     else:
-        domain = None
+        tb = True
+        domain = "CPMenu.System.GlobalPanel.GlobalDefault"
 
-    if domain:
-        group = cpc.findGroup(domain)
+    group = cpc.findGroup(domain)
     if group:
         commands = cpc.splitIndex(group, "commands")
+        commands = globalDefault(commands)
         commands = expandedMenuCommands(commands)
-
+    if tb:
+        for cmd in cpt.toolbarCommands():
+            commands.append(cmd)
     for cmd in commands:
         btn = buttonFactory()
         if cmd.startswith("CPCollapse"):
@@ -205,6 +210,22 @@ def workbenchButtons(workbench):
     return buttonList
 
 
+def globalDefault(commands):
+    """Add commands from global default menu."""
+    temp = []
+    for cmd in commands:
+        if cmd == "CPGlobalDefault":
+            domain = "CPMenu.System.GlobalPanel.GlobalDefault"
+            group = cpc.findGroup(domain)
+            if group:
+                for cmdGlobal in cpc.splitIndex(group, "commands"):
+                    temp.append(cmdGlobal)
+        else:
+            temp.append(cmd)
+
+    return temp
+
+
 def menuButton(domain, btn, actions):
     """Create menu for menu button."""
     menu = QtGui.QMenu(mw)
@@ -231,7 +252,8 @@ def menuButton(domain, btn, actions):
 
         default = g.GetString("Default")
         for a in menu.actions():
-            if a.objectName() == default:
+            name = a.objectName()
+            if name and name == default:
                 btn.setDefaultAction(a)
                 menu.setDefaultAction(a)
 
@@ -272,6 +294,8 @@ def expandedMenuCommands(commands):
                 commandsEx = cpc.splitIndex(g, "commands")
                 for cmdEx in commandsEx:
                     if cmdEx.startswith("CPMenu"):
+                        pass
+                    elif cmdEx == "CPSeparator":
                         pass
                     else:
                         names.append(cmdEx)

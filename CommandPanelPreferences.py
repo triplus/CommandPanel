@@ -114,6 +114,11 @@ def dialog():
         """Return to general preferences."""
         btnSettings.clearFocus()
         stack.setCurrentIndex(0)
+        if p.GetBool("Global", 0):
+            cBoxWb.setCurrentIndex(cBoxWb.findData("GlobalPanel"))
+        else:
+            activeWb = Gui.activeWorkbench().__class__.__name__
+            cBoxWb.setCurrentIndex(cBoxWb.findData(activeWb))
 
     btnSettingsDone.clicked.connect(onBtnSettingsDone)
 
@@ -305,8 +310,11 @@ def general(dia, stack, btnClose, btnSettings):
                           QtGui.QIcon(":/icons/freecad"),
                           "Global panel",
                           "GlobalPanel")
-        activeWb = Gui.activeWorkbench().__class__.__name__
-        cBoxWb.setCurrentIndex(cBoxWb.findData(activeWb))
+        if p.GetBool("Global", 0):
+            cBoxWb.setCurrentIndex(cBoxWb.findData("GlobalPanel"))
+        else:
+            activeWb = Gui.activeWorkbench().__class__.__name__
+            cBoxWb.setCurrentIndex(cBoxWb.findData(activeWb))
         cBoxWb.blockSignals(False)
 
     def onCBoxWb():
