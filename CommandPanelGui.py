@@ -199,6 +199,7 @@ def onStart():
     """Start command panel."""
     start = False
     try:
+        mw.mainWindowClosed
         mw.workbenchActivated
         start = True
     except AttributeError:
@@ -208,6 +209,7 @@ def onStart():
         t.deleteLater()
         onWorkbench()
         accessoriesMenu()
+        mw.mainWindowClosed.connect(onClose)
         mw.workbenchActivated.connect(onWorkbench)
         a = QtGui.QAction(mw)
         mw.addAction(a)
@@ -215,6 +217,16 @@ def onStart():
         a.setObjectName("InvokeCommandPanel")
         a.setShortcut(QtGui.QKeySequence("Ctrl+Q"))
         a.triggered.connect(onInvoke)
+
+
+def onClose():
+    """Remove system presets and groups without index on FreeCAD close."""
+    p.RemGroup("System")
+
+    for wb in Gui.listWorkbenches():
+        base = p.GetGroup("User").GetGroup(wb)
+        if not cpc.splitIndex(base):
+            p.GetGroup("User").RemGroup(wb)
 
 
 def onPreStart():
