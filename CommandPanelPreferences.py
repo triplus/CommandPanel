@@ -172,6 +172,11 @@ def general(dia, stack, btnClose, btnSettings):
     btnRemoveWbMenu.setToolTip("Remove selected workbench menu")
     btnRemoveWbMenu.setIcon(QtGui.QIcon(path + "CommandPanelRemove.svg"))
 
+    # Button rename workbench menu
+    btnRenameWbMenu = QtGui.QPushButton()
+    btnRenameWbMenu.setToolTip("Rename selected workbench menu")
+    btnRenameWbMenu.setIcon(QtGui.QIcon(path + "CommandPanelRename.svg"))
+
     # Button add command
     btnAddCommand = QtGui.QPushButton()
     btnAddCommand.setToolTip("Add selected command")
@@ -234,6 +239,7 @@ def general(dia, stack, btnClose, btnSettings):
     loCBoxMenu.addWidget(cBoxMenu)
     loCBoxMenu.addWidget(btnAddWbMenu)
     loCBoxMenu.addWidget(btnRemoveWbMenu)
+    loCBoxMenu.addWidget(btnRenameWbMenu)
 
     loControls = QtGui.QHBoxLayout()
     loControls.addStretch()
@@ -431,6 +437,31 @@ def general(dia, stack, btnClose, btnSettings):
         btnClose.setFocus()
 
     btnRemoveWbMenu.clicked.connect(onBtnRemoveWbMenu)
+
+    def onBtnRenameWbMenu():
+        """Rename existing workbench menu."""
+        d = QtGui.QInputDialog(dia)
+        d.setModal(True)
+        d.setInputMode(QtGui.QInputDialog.InputMode.TextInput)
+        text, ok = QtGui.QInputDialog.getText(dia,
+                                              "Rename menu",
+                                              "Please insert new menu name.")
+        if ok:
+            domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+            g = cpc.findGroup(domain)
+            if g:
+                try:
+                    g.SetString("name", text.encode("UTF-8"))
+                except TypeError:
+                    g.SetString("name", text)
+                populateCBoxMenu()
+                cBoxMenu.setCurrentIndex(cBoxMenu.findData(domain))
+                populateEnabled(g)
+
+        d.deleteLater()
+        btnClose.setFocus()
+
+    btnRenameWbMenu.clicked.connect(onBtnRenameWbMenu)
 
     def onCKDefault(checked):
         """Set the checkbox state."""
