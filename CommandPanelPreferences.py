@@ -26,6 +26,7 @@ from PySide import QtGui
 from PySide import QtCore
 import CommandPanelGui as cpg
 import CommandPanelCommon as cpc
+import CommandPanelToolbars as cpt
 
 
 p = cpc.p
@@ -35,6 +36,8 @@ path = os.path.dirname(__file__) + "/Resources/icons/"
 cBoxWb = None
 cBoxMenu = None
 enabled = None
+copyDomain = None
+editContext = None
 
 
 def createWidgets():
@@ -172,6 +175,11 @@ def general(dia, stack, btnClose, btnSettings):
     btnRemoveWbMenu.setToolTip("Remove selected workbench menu")
     btnRemoveWbMenu.setIcon(QtGui.QIcon(path + "CommandPanelRemove.svg"))
 
+    # Button copy workbench menu
+    btnCopyWbMenu = QtGui.QPushButton()
+    btnCopyWbMenu.setToolTip("Copy existing workbench menu")
+    btnCopyWbMenu.setIcon(QtGui.QIcon(path + "CommandPanelCopy.svg"))
+
     # Button rename workbench menu
     btnRenameWbMenu = QtGui.QPushButton()
     btnRenameWbMenu.setToolTip("Rename selected workbench menu")
@@ -240,6 +248,7 @@ def general(dia, stack, btnClose, btnSettings):
     loCBoxMenu.addWidget(btnAddWbMenu)
     loCBoxMenu.addWidget(btnRemoveWbMenu)
     loCBoxMenu.addWidget(btnRenameWbMenu)
+    loCBoxMenu.addWidget(btnCopyWbMenu)
 
     loControls = QtGui.QHBoxLayout()
     loControls.addStretch()
@@ -651,13 +660,24 @@ def general(dia, stack, btnClose, btnSettings):
         """Open edit dialog for selected menu ."""
         current = enabled.currentItem()
         if current and current.data(QtCore.Qt.UserRole).startswith("CPMenu"):
+            global editContext
+            editContext = "Set"
             stack.setCurrentIndex(1)
 
     btnEditMenu.clicked.connect(onEditMenu)
     enabled.itemDoubleClicked.connect(onEditMenu)
 
+    def onCopyWbMenu():
+        """Open copy menu dialog."""
+        global editContext
+        editContext = "Copy"
+        stack.setCurrentIndex(1)
+
+    btnCopyWbMenu.clicked.connect(onCopyWbMenu)
+
     def onStack(n):
         """Stack widget index change."""
+        global copyDomain
         if n == 0:
             row = enabled.currentRow()
             domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
@@ -665,6 +685,12 @@ def general(dia, stack, btnClose, btnSettings):
                 populateEnabled(cpc.findGroup(domain))
             enabled.setCurrentRow(row)
             btnClose.setDefault(True)
+            if copyDomain:
+                populateCBoxMenu()
+                cBoxMenu.setCurrentIndex(cBoxMenu.findData(copyDomain))
+                domain = cBoxMenu.itemData(cBoxMenu.currentIndex())
+                populateEnabled(cpc.findGroup(domain))
+                copyDomain = None
         onSelectionChanged()
 
     stack.currentChanged.connect(onStack)
@@ -694,7 +720,10 @@ def edit(stack):
     widget.setLayout(layout)
 
     tree = QtGui.QTreeWidget()
-    tree.setHeaderLabel("Set menu: None")
+    if editContext == "Copy":
+        tree.setHeaderLabel("Copy menu: None")
+    else:
+        tree.setHeaderLabel("Set menu: None")
 
     # Button edit done
     btnEditDone = QtGui.QPushButton()
@@ -802,26 +831,46 @@ def edit(stack):
         if currentWb != "GlobalPanel":
             treeItems(None, "Global", "GlobalPanel", False, None)
 
-        # Current
-        current = enabled.currentItem()
-        if current and (current.data(QtCore.Qt.UserRole)
-                        .startswith("CPMenu")):
-            data = current.data(QtCore.Qt.UserRole)
-            for i in items:
-                if i.data(0, QtCore.Qt.UserRole) == data:
-                    i.setCheckState(0, QtCore.Qt.Checked)
-                    text = i.text(0)
-                    tree.setHeaderLabel("Set menu: " + text)
+        # Toolbars (for copy mode only)
+        if editContext == "Copy":
+            tree.setHeaderLabel("Copy: None")
+            itemsToolbar = QtGui.QTreeWidgetItem(tree)
+            itemsToolbar.setText(0, "Toolbars")
+            tb = []
+            for i in mw.findChildren(QtGui.QToolBar):
+                if i.objectName():
+                    tb.append(i.objectName())
+            tb.sort()
+            for name in tb:
+                domain = "CPMenu" + "." + "Toolbar" + "." + name
+                itemTb = QtGui.QTreeWidgetItem(itemsToolbar)
+                itemTb.setText(0, name)
+                itemTb.setCheckState(0, QtCore.Qt.Unchecked)
+                itemTb.setData(0, QtCore.Qt.UserRole, domain)
+                items.append(itemTb)
 
-                    parent = i.parent()
-                    while parent:
-                        parent.setExpanded(True)
-                        parent = parent.parent()
+        # Current (for set mode only)
+        if editContext == "Set":
+            current = enabled.currentItem()
+            if current and (current.data(QtCore.Qt.UserRole)
+                            .startswith("CPMenu")):
+                data = current.data(QtCore.Qt.UserRole)
+                for i in items:
+                    if i.data(0, QtCore.Qt.UserRole) == data:
+                        i.setCheckState(0, QtCore.Qt.Checked)
+                        text = i.text(0)
+                        tree.setHeaderLabel("Set menu: " + text)
+
+                        parent = i.parent()
+                        while parent:
+                            parent.setExpanded(True)
+                            parent = parent.parent()
 
         tree.blockSignals = False
 
     def onChecked(item):
-        """Set menu."""
+        """Copy or set menu."""
+        global copyDomain
         tree.blockSignals = True
         if item.checkState(0) == QtCore.Qt.Checked:
             for i in items:
@@ -833,22 +882,55 @@ def edit(stack):
 
         text = item.text(0)
 
-        if data:
+        if editContext == "Set" and data:
             tree.setHeaderLabel("Set menu: " + text)
             enabled.currentItem().setData(QtCore.Qt.UserRole,
                                           item.data(0, QtCore.Qt.UserRole))
             saveEnabled()
-        else:
+        elif editContext == "Set" and not data:
             tree.setHeaderLabel("Set menu: None")
             enabled.currentItem().setData(QtCore.Qt.UserRole, "CPMenu")
             saveEnabled()
+        elif editContext == "Copy" and data:
+            tree.setHeaderLabel("Copy: " + text)
+            copyDomain = data
+        elif editContext == "Copy" and not data:
+            tree.setHeaderLabel("Copy: None")
+            copyDomain = None
+        else:
+            pass
         tree.blockSignals = False
 
     def onEditDone():
         """Switch to general preferences."""
+        global copyDomain
         tree.itemChanged.disconnect(onChecked)
         del items[:]
         tree.clear()
+
+        if copyDomain:
+            wb = cBoxWb.itemData(cBoxWb.currentIndex())
+            domain = "CPMenu" + "." + "User" + "." + wb
+            if copyDomain.startswith("CPMenu.Toolbar"):
+                name = copyDomain.split(".")[2]
+                grpCopy = cpc.newGroup(domain)
+                uid = grpCopy.GetString("uuid")
+                copyDomain = domain + "." + uid
+                grpCopy.SetString("name", name)
+                grpCopy.SetString("commands",
+                                  ",".join(cpt.toolbarCommands(name)))
+            else:
+                grpOrigin = cpc.findGroup(copyDomain)
+                grpCopy = cpc.newGroup(domain)
+                uid = grpCopy.GetString("uuid")
+                domain = domain + "." + uid
+                if grpOrigin and grpCopy:
+                    grpCopy.SetString("name", grpOrigin.GetString("name"))
+                    grpCopy.SetString("commands",
+                                      grpOrigin.GetString("commands"))
+                    copyDomain = domain
+                else:
+                    copyDomain = None
 
         stack.setCurrentIndex(0)
 
